@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String      @id @default(uuid())
+  pesel            String      @unique
+  imie             String
+  nazwisko         String
+  nip              String?
+  id_document      String?
+  city             String
+  postCode         String
+  address          String?
+  cars             Vehicle[]
+  sellerContracts  Contract[]  @relation("Seller")
+  buyerContracts   Contract[]  @relation("Buyer")
+  signatures       ContractSignature[]
+  notifications    Notification[]
+  createdAt        DateTime    @default(now())
+}
+
+model Vehicle {
+  id                  String     @id @default(uuid())
+  numerRejestracyjny  String     @unique
+  model               String
+  brand               String
+  numerVIN            String     @unique
+  rok                 Int
+  ubezpieczenie       DateTime?
+  badanieTechniczne   DateTime?
+  pierwszaRejestracja DateTime?
+  dataNabyciaPraw     DateTime?
+  formaWlasnosci      String
+  stanLicznika        Int?
+  ownerId             String
+  owner               User       @relation(fields: [ownerId], references: [id])
+  contracts           Contract[]
+  createdAt           DateTime   @default(now())
+}
+
+model Contract {
+  id            String                  @id @default(uuid())
+  sellerId      String
+  buyerId       String
+  vehicleId     String
+  saleCity      String
+  stanLicznika  Int?
+  price         Decimal                 @db.Decimal(10, 2)
+  status        ContractStatus
+  createdAt     DateTime                @default(now())
+  signedAt      DateTime?
+  seller        User                    @relation("Seller", fields: [sellerId], references: [id])
+  buyer         User                    @relation("Buyer", fields: [buyerId], references: [id])
+  vehicle       Vehicle                 @relation(fields: [vehicleId], references: [id])
+  signatures    ContractSignature[]
+  statusHistory ContractStatusHistory[]
+  documents     DocumentInstance[]
+  messages      EdMessage[]
+}
+
+enum ContractStatus {
+  WAITING_DATA
+  DATA_RECEIVED
+  SELLER_SIGNED
+  CONTRACT_SIGNED
+  DEREGISTERED
+  WAITING_PLATE_CHANGE
+  REGISTERED
+  WAITING_TAX
+  FINISHED
+}
+
+model ContractSignature {
+  id         String   @id @default(uuid())
+  contractId String
+  userId     String
+  signature  String
+  signedAt   DateTime @default(now())
+  contract   Contract @relation(fields: [contractId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model ContractStatusHistory {
+  id         String         @id @default(uuid())
+  contractId String
+  status     ContractStatus
+  createdAt  DateTime       @default(now())
+  contract   Contract       @relation(fields: [contractId], references: [id])
+}
+
+model DocumentTemplate {
+  id        String             @id @default(uuid())
+  name      String
+  type      String
+  content   String
+  createdAt DateTime           @default(now())
+  instances DocumentInstance[]
+}
+
+model DocumentInstance {
+  id               String           @id @default(uuid())
+  templateId       String
+  contractId       String
+  generatedContent String
+  createdAt        DateTime         @default(now())
+  template         DocumentTemplate @relation(fields: [templateId], references: [id])
+  contract         Contract         @relation(fields: [contractId], references: [id])
+}
+
+model EdMessage {
+  id         String           @id @default(uuid())
+  contractId String?
+  direction  MessageDirection
+  status     MessageStatus
+  recipient  String?
+  sender     String?
+  subject    String?
+  payload    String
+  externalId String?
+  createdAt  DateTime         @default(now())
+  contract   Contract?        @relation(fields: [contractId], references: [id])
+}
+
+enum MessageDirection {
+  OUTGOING
+  INCOMING
+}
+
+enum MessageStatus {
+  CREATED
+  SENT
+  DELIVERED
+  FAILED
+  PROCESSED
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
