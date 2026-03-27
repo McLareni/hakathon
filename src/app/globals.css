@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+body {
+  background-color: #F8F9FA;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Ховаємо скролбар для каруселі авто */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
