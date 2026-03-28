@@ -81,6 +81,13 @@ export async function GET(
     return NextResponse.json({ error: "Condition not found" }, { status: 404 });
   }
 
+  if (process.status === "CANCELLED") {
+    return NextResponse.json(
+      { error: "Condition was cancelled" },
+      { status: 410 },
+    );
+  }
+
   if (process.creator.id !== userId && process.participant?.id !== userId) {
     return NextResponse.json(
       { error: "You do not have access to this condition" },
@@ -148,6 +155,13 @@ export async function POST(
 
     if (!process) {
       return NextResponse.json({ error: "Condition not found" }, { status: 404 });
+    }
+
+    if (process.status === "CANCELLED") {
+      return NextResponse.json(
+        { error: "Cancelled condition cannot be signed" },
+        { status: 409 },
+      );
     }
 
     if (process.creatorId !== body.userId && process.participantId !== body.userId) {

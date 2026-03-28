@@ -96,6 +96,31 @@ export default function InviteConfirmPage() {
     }
   };
 
+  const handleReject = async () => {
+    if (!user || !process) return;
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/conditions/invite/${token}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participantId: user.id }),
+      });
+
+      if (!res.ok) {
+        const { error: msg } = (await res.json()) as { error: string };
+        throw new Error(msg ?? "Błąd odrzucenia");
+      }
+
+      router.push("/powiadomienia");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Błąd odrzucenia");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const sellerName = process
     ? `${process.creator.imie} ${process.creator.nazwisko}`
     : "—";
@@ -250,11 +275,11 @@ export default function InviteConfirmPage() {
         {/* ── BOTTOM BUTTONS ── */}
         <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-107.5 bg-white px-4 pt-3 pb-8 border-t border-[#f0f1f3] flex gap-3 sm:border-x sm:border-gray-200 z-50">
           <button
-            onClick={() => router.back()}
+            onClick={handleReject}
             className="flex-1 rounded-[14px] border border-[#d1d5db] bg-white py-4 text-[15px] font-bold text-[#1a1f2e] active:bg-[#f5f5f5] disabled:opacity-50"
             disabled={submitting}
           >
-            Odrzuć
+            {submitting ? "Trwa..." : "Odrzuć"}
           </button>
           <button
             onClick={handleConfirm}
