@@ -59,7 +59,7 @@ export default function UslugiPage() {
                   label="Sprzedaż pojazdu"
                   iconColor="text-[#1C4ED8]"
                   isLast={true}
-                  onClick={() => router.push("/")}
+                  onClick={() => router.push("/sprzedaz")}
                 />
               </div>
             </div>
