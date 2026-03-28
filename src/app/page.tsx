@@ -1,96 +1,60 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { BottomNav } from "@/components/BottomNav"; // Підключаємо вашу навігацію
-import { 
-  ScanLine, 
-  Shield, 
-  FileText, 
-  Wrench, 
-  FolderOpen, 
-  Receipt, 
-  File 
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Header } from "@/components/Header";
+import { QuickActions } from "@/components/QuickActions";
+import { VehicleCarousel } from "@/components/VehicleCarousel";
+import { BottomNav } from "@/components/BottomNav";
 
-export default function DodajDokumentPage() {
-  const router = useRouter();
+type DashboardUser = {
+  id: string; imie: string; nazwisko: string; city: string;
+};
+
+type DashboardVehicle = {
+  id: string; brand: string; model: string; numerRejestracyjny: string;
+  rok: number; stanLicznika: number | null; numerVIN: string;
+};
+
+type DashboardResponse = {
+  user: DashboardUser | null;
+  vehicle: DashboardVehicle | null;
+};
+
+export default function Home() {
+  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const response = await fetch("/api/dashboard", { cache: "no-store" });
+        if (!response.ok) throw new Error("API failed");
+        const payload = await response.json();
+        setData(payload);
+      } catch {
+        setError("Błąd ładowania danych.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadDashboard();
+  }, []);
+
+  const vehiclesList = data?.vehicle ? [data.vehicle] : [];
 
   return (
-    <div className="min-h-screen bg-[#606164] flex justify-center items-start sm:py-10 font-sans">
-      {/* Збільшено pb-32, щоб контент не перекривався BottomNav */}
-      <main className="relative w-full max-w-[414px] bg-[#F5F6F8] min-h-[896px] pb-32 shadow-2xl overflow-y-auto hide-scrollbar sm:rounded-[40px]">
-        
-        {/* Header Section */}
-        <div className="px-6 pt-14 mb-8">
-          {/* Back Button */}
-          <button 
-            onClick={() => router.back()} 
-            className="w-10 h-10 flex items-center justify-start text-[#e32129] mb-4 hover:opacity-70 transition-opacity"
-          >
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          
-          <h1 className="text-[34px] font-black text-[#1a1e27] tracking-tight mb-2 leading-tight">
-            Dodaj dokument
-          </h1>
-          <p className="text-[14px] font-medium text-[#6b7280]">
-            Wybierz szablon lub zeskanuj dokument PDF
-          </p>
+    <div className="min-h-screen sm:flex sm:justify-center">
+      <main className="relative w-full max-w-107.5 min-h-screen bg-[#F5F5F5] overflow-x-hidden pb-24 sm:min-h-230 sm:shadow-[0_20px_70px_rgba(15,23,42,0.15)]">
+        <div className="">
+          <Header/>
         </div>
-
-        {/* Scan PDF Button */}
-        <div className="px-6 mb-8">
-          <button className="w-full bg-[#cb2027] rounded-[24px] p-6 flex items-center gap-5 shadow-[0_12px_28px_-8px_rgba(203,32,39,0.55)] hover:bg-[#b91c23] transition-colors active:scale-[0.98]">
-            {/* Scan Icon z Lucide */}
-            <div className="text-white flex-shrink-0">
-              <ScanLine size={40} strokeWidth={2} />
-            </div>
-            <div className="text-left flex flex-col">
-              <span className="text-white font-bold text-[18px]">Zeskanuj PDF</span>
-              <span className="text-white/80 text-[13px] font-medium mt-0.5">Importuj dane z dokumentu PDF</span>
-            </div>
-          </button>
+        <div className="mt-3">
+          <QuickActions />
         </div>
-
-        {/* Templates Section */}
-        <div className="px-6 mb-4">
-          <h2 className="text-[18px] font-black text-[#1a1e27] mb-1">Szablony</h2>
-          <p className="text-[13px] font-medium text-[#9ca3af] mb-5">
-            Wybierz typ dokumentu do dodania
-          </p>
-
-          {/* Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            <TemplateCard 
-              icon={<Shield size={24} strokeWidth={2.5} />} 
-              title="Ubezpieczenie OC/AC" 
-            />
-            <TemplateCard 
-              icon={<FileText size={24} strokeWidth={2.5} />} 
-              title="Dowód rejestracyjny" 
-            />
-            <TemplateCard 
-              icon={<Wrench size={24} strokeWidth={2.5} />} 
-              title="Książka serwisowa" 
-            />
-            <TemplateCard 
-              icon={<FolderOpen size={24} strokeWidth={2.5} />} 
-              title="Przegląd techniczny" 
-            />
-            <TemplateCard 
-              icon={<Receipt size={24} strokeWidth={2.5} />} 
-              title="Faktura zakupu" 
-            />
-            <TemplateCard 
-              icon={<File size={24} strokeWidth={2.5} />} 
-              title="Inny dokument" 
-            />
-          </div>
+        <div className="mt-3">
+          <VehicleCarousel vehicles={vehiclesList} loading={loading} error={error} />
         </div>
-
-        {/* Додаємо ваш BottomNav в кінець main */}
         <BottomNav />
 
       </main>
