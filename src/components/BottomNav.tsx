@@ -33,7 +33,7 @@ export const BottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-50 flex w-full max-w-[414px] -translate-x-1/2 items-center justify-between bg-white px-2 pt-3 pb-8 shadow-[0_-8px_30px_rgba(0,0,0,0.05)] border-t border-gray-100 sm:border-x sm:border-gray-200">
+    <nav className="fixed bottom-0 left-1/2 z-50 flex w-full -translate-x-1/2 items-center justify-between bg-white px-2 pt-3 pb-8 shadow-[0_-8px_30px_rgba(0,0,0,0.05)] border-t border-gray-100 sm:border-x sm:border-gray-200">
       {navItems.map((item) => {
         const active = pathname === item.href;
         

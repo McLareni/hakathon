@@ -12,6 +12,8 @@ type MetadataShape = {
   requestedFields?: string[];
   participantData?: Record<string, string>;
   confirmedAt?: string;
+  salePrice?: number | null;
+  mileage?: number | null;
 };
 
 function parseMetadata(value: Prisma.JsonValue | null): MetadataShape {
@@ -45,6 +47,20 @@ export async function GET(
           city: true,
         },
       },
+      vehicle: {
+        select: {
+          id: true,
+          brand: true,
+          model: true,
+          numerRejestracyjny: true,
+          rok: true,
+          contracts: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { price: true },
+          },
+        },
+      },
     },
   });
 
@@ -68,6 +84,17 @@ export async function GET(
     requestLanguage: metadata.requestLanguage ?? "pl",
     requestedFields: metadata.requestedFields ?? [],
     creator: process.creator,
+    vehicle: process.vehicle
+      ? {
+          id: process.vehicle.id,
+          brand: process.vehicle.brand,
+          model: process.vehicle.model,
+          numerRejestracyjny: process.vehicle.numerRejestracyjny,
+          rok: process.vehicle.rok,
+          price: metadata.salePrice ?? process.vehicle.contracts[0]?.price ?? null,
+          mileage: metadata.mileage ?? null,
+        }
+      : null,
   });
 }
 

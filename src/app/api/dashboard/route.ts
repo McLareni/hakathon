@@ -29,6 +29,9 @@ export async function GET() {
         imie: user.imie,
         nazwisko: user.nazwisko,
         city: user.city,
+        pesel: user.pesel,
+        address: user.address,
+        postCode: user.postCode,
       },
       vehicle: vehicle
         ? {
