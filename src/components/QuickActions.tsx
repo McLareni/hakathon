@@ -1,22 +1,45 @@
+import { IdCard } from 'lucide-react';
+
 export const QuickActions = () => {
-  const actions = ["Dowód osobisty", "Dokumenty", "Płatności"];
+  const actions = [
+    {
+      label: "Dokumenty",
+      active: true,
+      icon: (
+        <IdCard className="h-10 w-10" strokeWidth={1.7} />
+      ),
+    },
+    {
+      label: "Umowy",
+      active: false,
+      icon: (
+        <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+          <path d="M8 3.5h8a2 2 0 012 2V20a.5.5 0 01-.8.4L14 18H8a2 2 0 01-2-2V5.5a2 2 0 012-2z" />
+          <path d="M6 7H4.8A1.8 1.8 0 003 8.8v8.4A1.8 1.8 0 004.8 19H6" />
+          <path strokeLinecap="round" d="M9 8h6M9 11h6M9 14h4" />
+        </svg>
+      ),
+    },
+  ];
 
   return (
-    <section className="px-5 pt-8">
-      <p className="mb-4 text-[12px] font-bold uppercase tracking-wider text-[#a7a7b0]">
-        Szybkie akcje
-      </p>
-      <div className="grid grid-cols-3 gap-3">
-        {actions.map((label) => (
-          <div
-            key={label}
-            className="rounded-[20px] bg-white px-2 py-5 text-center shadow-[0_4px_15px_rgba(0,0,0,0.03)] flex flex-col items-center justify-center gap-3"
+    <section className="px-5 pt-5">
+      <div className="flex gap-3">
+        {actions.map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            className={`flex flex-1 flex-col items-center justify-center gap-2.5 rounded-[20px] py-6 text-center ${
+              action.active
+                ? "bg-[#e31d3b] border border-[#DC143C] text-white shadow-redSoft"
+                : "bg-white border border-[#F5F5F5] text-[#666666] shadow-soft"
+            }`}
           >
-            <div className="h-10 w-10 rounded-[14px] bg-[#f2f2f4]" />
-            <p className="text-[12px] font-semibold text-[#44454d] leading-tight px-1">
-              {label}
+            <div>{action.icon}</div>
+            <p className={`text-[14px] leading-tight ${action.active ? "font-bold text-white" : "font-semibold text-[#5d6067]"}`}>
+              {action.label}
             </p>
-          </div>
+          </button>
         ))}
       </div>
     </section>

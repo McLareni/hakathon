@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { QuickActions } from "@/components/QuickActions";
 import { VehicleCarousel } from "@/components/VehicleCarousel";
@@ -41,25 +41,20 @@ export default function Home() {
     void loadDashboard();
   }, []);
 
-  const fullName = useMemo(() => 
-    data?.user ? `${data.user.imie} ${data.user.nazwisko}` : "Użytkownik", 
-  [data]);
-
-  const initials = useMemo(() => {
-    if (!data?.user) return "--";
-    return `${data.user.imie[0]}${data.user.nazwisko[0]}`.toUpperCase();
-  }, [data]);
-
   const vehiclesList = data?.vehicle ? [data.vehicle] : [];
 
   return (
-    <div className="min-h-screen bg-gray-200 flex justify-center font-sans">
-      <main className="relative w-full max-w-[400px] bg-[#F8F9FA] min-h-screen pb-24 shadow-2xl sm:border-x sm:border-gray-300 overflow-x-hidden">
-        
-        <Header fullName={fullName} initials={initials} loading={loading} />
-        <QuickActions />
-        <VehicleCarousel vehicles={vehiclesList} loading={loading} error={error} />
-
+    <div className="min-h-screen sm:flex sm:justify-center">
+      <main className="relative w-full max-w-107.5 min-h-screen bg-[#F5F5F5] overflow-x-hidden pb-24 sm:min-h-230 sm:shadow-[0_20px_70px_rgba(15,23,42,0.15)]">
+        <div className="">
+          <Header/>
+        </div>
+        <div className="mt-3">
+          <QuickActions />
+        </div>
+        <div className="mt-3">
+          <VehicleCarousel vehicles={vehiclesList} loading={loading} error={error} />
+        </div>
         <BottomNav />
       </main>
     </div>
