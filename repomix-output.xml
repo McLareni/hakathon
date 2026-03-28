@@ -1,0 +1,2490 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+eslint.config.mjs
+next.config.ts
+package.json
+postcss.config.mjs
+prisma/migrations/20260327223129_init_contract_models/migration.sql
+prisma/migrations/20260328000624_add_deal_conditions_invites/migration.sql
+prisma/migrations/migration_lock.toml
+prisma/schema.prisma
+public/file.svg
+public/globe.svg
+public/next.svg
+public/vercel.svg
+public/window.svg
+README.md
+src/app/api/conditions/[id]/result/route.ts
+src/app/api/conditions/[token]/route.ts
+src/app/api/conditions/route.ts
+src/app/api/dashboard/route.ts
+src/app/api/document-templates/route.ts
+src/app/api/document-templates/upload-scan/route.ts
+src/app/api/vehicles/route.ts
+src/app/favicon.ico
+src/app/globals.css
+src/app/layout.tsx
+src/app/page.tsx
+src/app/uslugi/page.tsx
+src/app/vehicles/sell/[id]/page.tsx
+src/components/BottomNav.tsx
+src/components/Header.tsx
+src/components/QuickActions.tsx
+src/components/VehicleCarousel.tsx
+src/lib/prisma.ts
+src/lib/scan-ocr.ts
+src/lib/template-analysis.ts
+src/types/pdf-parse-lib.d.ts
+tsconfig.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".gitignore">
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+</file>
+
+<file path="eslint.config.mjs">
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+</file>
+
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
+</file>
+
+<file path="prisma/migrations/20260327223129_init_contract_models/migration.sql">
+-- CreateEnum
+CREATE TYPE "public"."ContractStatus" AS ENUM ('WAITING_DATA', 'DATA_RECEIVED', 'SELLER_SIGNED', 'CONTRACT_SIGNED', 'DEREGISTERED', 'WAITING_PLATE_CHANGE', 'REGISTERED', 'WAITING_TAX', 'FINISHED');
+
+-- CreateEnum
+CREATE TYPE "public"."MessageDirection" AS ENUM ('OUTGOING', 'INCOMING');
+
+-- CreateEnum
+CREATE TYPE "public"."MessageStatus" AS ENUM ('CREATED', 'SENT', 'DELIVERED', 'FAILED', 'PROCESSED');
+
+-- CreateTable
+CREATE TABLE "public"."User" (
+    "id" TEXT NOT NULL,
+    "pesel" TEXT NOT NULL,
+    "imie" TEXT NOT NULL,
+    "nazwisko" TEXT NOT NULL,
+    "nip" TEXT,
+    "id_document" TEXT,
+    "city" TEXT NOT NULL,
+    "postCode" TEXT NOT NULL,
+    "address" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."Vehicle" (
+    "id" TEXT NOT NULL,
+    "numerRejestracyjny" TEXT NOT NULL,
+    "model" TEXT NOT NULL,
+    "brand" TEXT NOT NULL,
+    "numerVIN" TEXT NOT NULL,
+    "rok" INTEGER NOT NULL,
+    "ubezpieczenie" TIMESTAMP(3),
+    "badanieTechniczne" TIMESTAMP(3),
+    "pierwszaRejestracja" TIMESTAMP(3),
+    "dataNabyciaPraw" TIMESTAMP(3),
+    "formaWlasnosci" TEXT NOT NULL,
+    "stanLicznika" INTEGER,
+    "ownerId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Vehicle_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."Contract" (
+    "id" TEXT NOT NULL,
+    "sellerId" TEXT NOT NULL,
+    "buyerId" TEXT NOT NULL,
+    "vehicleId" TEXT NOT NULL,
+    "saleCity" TEXT NOT NULL,
+    "stanLicznika" INTEGER,
+    "price" DECIMAL(10,2) NOT NULL,
+    "status" "public"."ContractStatus" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "signedAt" TIMESTAMP(3),
+
+    CONSTRAINT "Contract_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."ContractSignature" (
+    "id" TEXT NOT NULL,
+    "contractId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "signature" TEXT NOT NULL,
+    "signedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ContractSignature_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."ContractStatusHistory" (
+    "id" TEXT NOT NULL,
+    "contractId" TEXT NOT NULL,
+    "status" "public"."ContractStatus" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ContractStatusHistory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."DocumentTemplate" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DocumentTemplate_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."DocumentInstance" (
+    "id" TEXT NOT NULL,
+    "templateId" TEXT NOT NULL,
+    "contractId" TEXT NOT NULL,
+    "generatedContent" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DocumentInstance_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."EdMessage" (
+    "id" TEXT NOT NULL,
+    "contractId" TEXT,
+    "direction" "public"."MessageDirection" NOT NULL,
+    "status" "public"."MessageStatus" NOT NULL,
+    "recipient" TEXT,
+    "sender" TEXT,
+    "subject" TEXT,
+    "payload" TEXT NOT NULL,
+    "externalId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EdMessage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."Notification" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "read" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_pesel_key" ON "public"."User"("pesel");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Vehicle_numerRejestracyjny_key" ON "public"."Vehicle"("numerRejestracyjny");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Vehicle_numerVIN_key" ON "public"."Vehicle"("numerVIN");
+
+-- AddForeignKey
+ALTER TABLE "public"."Vehicle" ADD CONSTRAINT "Vehicle_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Contract" ADD CONSTRAINT "Contract_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Contract" ADD CONSTRAINT "Contract_buyerId_fkey" FOREIGN KEY ("buyerId") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Contract" ADD CONSTRAINT "Contract_vehicleId_fkey" FOREIGN KEY ("vehicleId") REFERENCES "public"."Vehicle"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ContractSignature" ADD CONSTRAINT "ContractSignature_contractId_fkey" FOREIGN KEY ("contractId") REFERENCES "public"."Contract"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ContractSignature" ADD CONSTRAINT "ContractSignature_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ContractStatusHistory" ADD CONSTRAINT "ContractStatusHistory_contractId_fkey" FOREIGN KEY ("contractId") REFERENCES "public"."Contract"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."DocumentInstance" ADD CONSTRAINT "DocumentInstance_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "public"."DocumentTemplate"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."DocumentInstance" ADD CONSTRAINT "DocumentInstance_contractId_fkey" FOREIGN KEY ("contractId") REFERENCES "public"."Contract"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."EdMessage" ADD CONSTRAINT "EdMessage_contractId_fkey" FOREIGN KEY ("contractId") REFERENCES "public"."Contract"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+</file>
+
+<file path="prisma/migrations/20260328000624_add_deal_conditions_invites/migration.sql">
+-- CreateEnum
+CREATE TYPE "public"."DealConditionStatus" AS ENUM (
+  'PENDING_PARTICIPANT',
+  'PARTICIPANT_JOINED',
+  'EXPIRED',
+  'CANCELLED'
+);
+
+-- CreateTable
+CREATE TABLE "public"."DealCondition" (
+  "id" TEXT NOT NULL,
+  "creatorId" TEXT NOT NULL,
+  "participantId" TEXT,
+  "vehicleId" TEXT NOT NULL,
+  "saleCity" TEXT NOT NULL,
+  "proposedPrice" DECIMAL(10,2) NOT NULL,
+  "note" TEXT,
+  "participantNote" TEXT,
+  "inviteToken" TEXT NOT NULL,
+  "status" "public"."DealConditionStatus" NOT NULL DEFAULT 'PENDING_PARTICIPANT',
+  "expiresAt" TIMESTAMP(3) NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+
+  CONSTRAINT "DealCondition_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DealCondition_inviteToken_key" ON "public"."DealCondition"("inviteToken");
+
+-- AddForeignKey
+ALTER TABLE "public"."DealCondition" ADD CONSTRAINT "DealCondition_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."DealCondition" ADD CONSTRAINT "DealCondition_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."DealCondition" ADD CONSTRAINT "DealCondition_vehicleId_fkey" FOREIGN KEY ("vehicleId") REFERENCES "public"."Vehicle"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+</file>
+
+<file path="prisma/migrations/migration_lock.toml">
+# Please do not edit this file manually
+# It should be added in your version-control system (e.g., Git)
+provider = "postgresql"
+</file>
+
+<file path="public/file.svg">
+<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
+</file>
+
+<file path="public/globe.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
+</file>
+
+<file path="public/next.svg">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
+</file>
+
+<file path="public/vercel.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
+</file>
+
+<file path="public/window.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+</file>
+
+<file path="src/app/api/conditions/[id]/result/route.ts">
+import { Prisma } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+type MetadataShape = {
+  requestLanguage?: "pl";
+  requestedFields?: string[];
+  participantData?: Record<string, string>;
+  confirmedAt?: string;
+};
+
+function parseMetadata(value: Prisma.JsonValue | null): MetadataShape {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return value as MetadataShape;
+}
+
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+  const creatorId = request.nextUrl.searchParams.get("creatorId");
+
+  if (!creatorId) {
+    return NextResponse.json(
+      { error: "creatorId query parameter is required" },
+      { status: 400 },
+    );
+  }
+
+  const process = await prisma.documentProcess.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      creatorId: true,
+      participantId: true,
+      type: true,
+      title: true,
+      description: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      expiresAt: true,
+      metadata: true,
+      participant: {
+        select: {
+          id: true,
+          imie: true,
+          nazwisko: true,
+          city: true,
+        },
+      },
+    },
+  });
+
+  if (!process) {
+    return NextResponse.json({ error: "Condition not found" }, { status: 404 });
+  }
+
+  if (process.creatorId !== creatorId) {
+    return NextResponse.json(
+      { error: "You do not have access to this condition" },
+      { status: 403 },
+    );
+  }
+
+  const metadata = parseMetadata(process.metadata);
+
+  return NextResponse.json({
+    id: process.id,
+    type: process.type,
+    title: process.title,
+    description: process.description,
+    status: process.status,
+    createdAt: process.createdAt,
+    updatedAt: process.updatedAt,
+    expiresAt: process.expiresAt,
+    requestLanguage: metadata.requestLanguage ?? "pl",
+    requestedFields: metadata.requestedFields ?? [],
+    participant: process.participant,
+    participantData: metadata.participantData ?? null,
+    confirmedAt: metadata.confirmedAt ?? null,
+    isConfirmed: process.status === "PARTICIPANT_JOINED" && Boolean(process.participantId),
+  });
+}
+</file>
+
+<file path="src/app/api/conditions/[token]/route.ts">
+import { Prisma } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+type ConfirmPayload = {
+  participantId?: string;
+  participantData?: Record<string, string>;
+};
+
+type MetadataShape = {
+  requestLanguage?: "pl";
+  requestedFields?: string[];
+  participantData?: Record<string, string>;
+  confirmedAt?: string;
+};
+
+function parseMetadata(value: Prisma.JsonValue | null): MetadataShape {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return value as MetadataShape;
+}
+
+export async function GET(
+  _: NextRequest,
+  context: { params: Promise<{ token: string }> },
+) {
+  const { token } = await context.params;
+
+  const process = await prisma.documentProcess.findUnique({
+    where: { sharedToken: token },
+    select: {
+      id: true,
+      type: true,
+      title: true,
+      description: true,
+      status: true,
+      expiresAt: true,
+      metadata: true,
+      creator: {
+        select: {
+          id: true,
+          imie: true,
+          nazwisko: true,
+          city: true,
+        },
+      },
+    },
+  });
+
+  if (!process) {
+    return NextResponse.json({ error: "Request not found" }, { status: 404 });
+  }
+
+  if (process.expiresAt && process.expiresAt < new Date()) {
+    return NextResponse.json({ error: "Request expired" }, { status: 410 });
+  }
+
+  const metadata = parseMetadata(process.metadata);
+
+  return NextResponse.json({
+    id: process.id,
+    type: process.type,
+    title: process.title,
+    description: process.description,
+    status: process.status,
+    expiresAt: process.expiresAt,
+    requestLanguage: metadata.requestLanguage ?? "pl",
+    requestedFields: metadata.requestedFields ?? [],
+    creator: process.creator,
+  });
+}
+
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ token: string }> },
+) {
+  try {
+    const { token } = await context.params;
+    const body = (await request.json()) as ConfirmPayload;
+
+    if (!body.participantId || !body.participantData) {
+      return NextResponse.json(
+        { error: "participantId and participantData are required" },
+        { status: 400 },
+      );
+    }
+
+    const process = await prisma.documentProcess.findUnique({
+      where: { sharedToken: token },
+      select: {
+        id: true,
+        creatorId: true,
+        participantId: true,
+        expiresAt: true,
+        metadata: true,
+      },
+    });
+
+    if (!process) {
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
+    if (process.expiresAt && process.expiresAt < new Date()) {
+      return NextResponse.json({ error: "Request expired" }, { status: 410 });
+    }
+
+    if (process.creatorId === body.participantId) {
+      return NextResponse.json(
+        { error: "Creator cannot confirm as participant" },
+        { status: 400 },
+      );
+    }
+
+    if (process.participantId && process.participantId !== body.participantId) {
+      return NextResponse.json(
+        { error: "Another participant already confirmed this request" },
+        { status: 409 },
+      );
+    }
+
+    const participant = await prisma.user.findUnique({
+      where: { id: body.participantId },
+      select: { id: true },
+    });
+
+    if (!participant) {
+      return NextResponse.json(
+        { error: "Participant not found" },
+        { status: 404 },
+      );
+    }
+
+    const previousMeta = parseMetadata(process.metadata);
+
+    const updated = await prisma.documentProcess.update({
+      where: { id: process.id },
+      data: {
+        participantId: body.participantId,
+        status: "PARTICIPANT_JOINED",
+        metadata: {
+          ...previousMeta,
+          participantData: body.participantData,
+          confirmedAt: new Date().toISOString(),
+        } as Prisma.InputJsonObject,
+      },
+      select: {
+        id: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to confirm request" },
+      { status: 500 },
+    );
+  }
+}
+</file>
+
+<file path="src/app/api/conditions/route.ts">
+import { randomUUID } from "node:crypto";
+import { DocumentProcessType, Prisma } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+type CreateRequestPayload = {
+  creatorId?: string;
+  title?: string;
+  description?: string;
+  language?: "pl";
+  requestedFields?: string[];
+  expiresInHours?: number;
+  vehicleId?: string;
+  type?: DocumentProcessType;
+};
+
+function makeToken() {
+  return randomUUID().replaceAll("-", "");
+}
+
+export async function GET(request: NextRequest) {
+  const creatorId = request.nextUrl.searchParams.get("creatorId");
+
+  if (!creatorId) {
+    return NextResponse.json(
+      { error: "creatorId query parameter is required" },
+      { status: 400 },
+    );
+  }
+
+  const conditions = await prisma.documentProcess.findMany({
+    where: { creatorId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      type: true,
+      status: true,
+      title: true,
+      createdAt: true,
+      updatedAt: true,
+      expiresAt: true,
+      participant: {
+        select: {
+          id: true,
+          imie: true,
+          nazwisko: true,
+        },
+      },
+    },
+  });
+
+  return NextResponse.json({ conditions });
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = (await request.json()) as CreateRequestPayload;
+    const {
+      creatorId,
+      title,
+      description,
+      language,
+      requestedFields,
+      expiresInHours,
+      vehicleId,
+      type,
+    } = body;
+
+    if (!creatorId || !title) {
+      return NextResponse.json(
+        { error: "creatorId and title are required" },
+        { status: 400 },
+      );
+    }
+
+    if (language && language !== "pl") {
+      return NextResponse.json(
+        { error: "Only Polish language (pl) is supported" },
+        { status: 400 },
+      );
+    }
+
+    const creator = await prisma.user.findUnique({
+      where: { id: creatorId },
+      select: { id: true },
+    });
+
+    if (!creator) {
+      return NextResponse.json({ error: "Creator not found" }, { status: 404 });
+    }
+
+    if (vehicleId) {
+      const vehicle = await prisma.vehicle.findUnique({
+        where: { id: vehicleId },
+        select: { id: true, ownerId: true },
+      });
+
+      if (!vehicle) {
+        return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
+      }
+
+      if (vehicle.ownerId !== creatorId) {
+        return NextResponse.json(
+          { error: "Vehicle must belong to creator" },
+          { status: 400 },
+        );
+      }
+    }
+
+    const validHours =
+      typeof expiresInHours === "number" && expiresInHours > 0
+        ? Math.min(expiresInHours, 168)
+        : 72;
+
+    const safeLanguage = "pl" as const;
+    const safeRequestedFields =
+      requestedFields && requestedFields.length > 0
+        ? requestedFields
+        : ["imie", "nazwisko", "pesel", "city", "address"];
+
+    const process = await prisma.documentProcess.create({
+      data: {
+        creatorId,
+        vehicleId: vehicleId ?? null,
+        title,
+        description: description?.trim() || null,
+        type: type ?? DocumentProcessType.OTHER,
+        status: "WAITING_PARTICIPANT",
+        sharedToken: makeToken(),
+        expiresAt: new Date(Date.now() + validHours * 60 * 60 * 1000),
+        metadata: {
+          requestLanguage: safeLanguage,
+          requestedFields: safeRequestedFields,
+        } as Prisma.InputJsonObject,
+      },
+      select: {
+        id: true,
+        sharedToken: true,
+        status: true,
+        expiresAt: true,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        processId: process.id,
+        token: process.sharedToken,
+        inviteUrl: `${request.nextUrl.origin}/join/${process.sharedToken}`,
+        resultUrl: `${request.nextUrl.origin}/api/conditions/${process.id}/result?creatorId=${creatorId}`,
+        status: process.status,
+        expiresAt: process.expiresAt,
+      },
+      { status: 201 },
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to create data request" },
+      { status: 500 },
+    );
+  }
+}
+</file>
+
+<file path="src/app/api/dashboard/route.ts">
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+const DASHBOARD_USER_ID = "dc88ba83-6324-468c-b182-52a04e1bd928";
+
+export async function GET() {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: DASHBOARD_USER_ID },
+      include: {
+        cars: {
+          orderBy: { createdAt: "asc" },
+        },
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({
+        user: null,
+        vehicle: null,
+      });
+    }
+
+    const [vehicle] = user.cars;
+
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        imie: user.imie,
+        nazwisko: user.nazwisko,
+        city: user.city,
+      },
+      vehicle: vehicle
+        ? {
+            id: vehicle.id,
+            brand: vehicle.brand,
+            model: vehicle.model,
+            numerRejestracyjny: vehicle.numerRejestracyjny,
+            rok: vehicle.rok,
+            stanLicznika: vehicle.stanLicznika,
+            numerVIN: vehicle.numerVIN,
+          }
+        : null,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to load dashboard data" },
+      { status: 500 },
+    );
+  }
+}
+</file>
+
+<file path="src/app/api/document-templates/route.ts">
+import { DocumentProcessType, DocumentTemplateSource } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+type CreateTemplatePayload = {
+  creatorId?: string;
+  name?: string;
+  type?: DocumentProcessType;
+  content?: string;
+};
+
+export async function GET(request: NextRequest) {
+  const userId = request.nextUrl.searchParams.get("userId");
+  const type = request.nextUrl.searchParams.get("type") as
+    | DocumentProcessType
+    | null;
+
+  const templates = await prisma.documentTemplate.findMany({
+    where: {
+      type: type ?? undefined,
+      OR: [
+        { source: DocumentTemplateSource.SYSTEM },
+        ...(userId ? [{ creatorId: userId }] : []),
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      source: true,
+      originalFileName: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return NextResponse.json({ templates });
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = (await request.json()) as CreateTemplatePayload;
+    const { creatorId, name, type, content } = body;
+
+    if (!creatorId || !name || !content) {
+      return NextResponse.json(
+        { error: "creatorId, name and content are required" },
+        { status: 400 },
+      );
+    }
+
+    const creator = await prisma.user.findUnique({
+      where: { id: creatorId },
+      select: { id: true },
+    });
+
+    if (!creator) {
+      return NextResponse.json({ error: "Creator not found" }, { status: 404 });
+    }
+
+    const template = await prisma.documentTemplate.create({
+      data: {
+        creatorId,
+        name,
+        type: type ?? DocumentProcessType.OTHER,
+        source: DocumentTemplateSource.USER_SCAN,
+        content,
+      },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        source: true,
+        createdAt: true,
+      },
+    });
+
+    return NextResponse.json(template, { status: 201 });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to create template" },
+      { status: 500 },
+    );
+  }
+}
+</file>
+
+<file path="src/app/api/document-templates/upload-scan/route.ts">
+import { DocumentProcessType, DocumentTemplateSource, Prisma } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { analyzeScanText } from "@/lib/template-analysis";
+import { extractTextFromScan } from "@/lib/scan-ocr";
+
+export const runtime = "nodejs";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+function parseType(raw: string | null): DocumentProcessType {
+  if (!raw) {
+    return DocumentProcessType.OTHER;
+  }
+
+  if (raw in DocumentProcessType) {
+    return raw as DocumentProcessType;
+  }
+
+  return DocumentProcessType.OTHER;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const creatorId = formData.get("creatorId")?.toString();
+    const name = formData.get("name")?.toString();
+    const type = parseType(formData.get("type")?.toString() ?? null);
+    const file = formData.get("file");
+
+    if (!creatorId || !name || !(file instanceof File)) {
+      return NextResponse.json(
+        { error: "creatorId, name and file are required" },
+        { status: 400 },
+      );
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File is too large. Max size is 10MB" },
+        { status: 400 },
+      );
+    }
+
+    const creator = await prisma.user.findUnique({
+      where: { id: creatorId },
+      select: { id: true },
+    });
+
+    if (!creator) {
+      return NextResponse.json({ error: "Creator not found" }, { status: 404 });
+    }
+
+    const ocrResult = await extractTextFromScan(file);
+    const analysis = analyzeScanText(ocrResult.text);
+    const templateContent = ocrResult.styledHtml || analysis.generatedContent;
+
+    const template = await prisma.documentTemplate.create({
+      data: {
+        creatorId,
+        name,
+        type,
+        source: DocumentTemplateSource.USER_SCAN,
+        content: templateContent,
+        originalFileName: file.name,
+        originalMimeType: file.type || null,
+        originalScanText: analysis.extractedText || null,
+        analysisSchema: {
+          fields: analysis.fields,
+          labels: analysis.labels,
+          engine: ocrResult.engine,
+          layout: ocrResult.layout ?? null,
+          stylePreserved: Boolean(ocrResult.styledHtml),
+        } as Prisma.InputJsonObject,
+      },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        source: true,
+        originalFileName: true,
+        analysisSchema: true,
+        content: true,
+        createdAt: true,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        template,
+        ocrEngine: ocrResult.engine,
+        message:
+          "Scan analyzed and template created. Review the detected fields before production use.",
+      },
+      { status: 201 },
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to analyze uploaded scan" },
+      { status: 500 },
+    );
+  }
+}
+</file>
+
+<file path="src/app/api/vehicles/route.ts">
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET(request: Request) {
+  try {
+    // Отримуємо URL і витягуємо параметр ?id=...
+    const { searchParams } = new URL(request.url);
+    const vehicleId = searchParams.get("id");
+
+    if (!vehicleId) {
+      return NextResponse.json(
+        { error: "Brak ID pojazdu w zapytaniu" },
+        { status: 400 }
+      );
+    }
+
+    // Шукаємо автомобіль у базі даних та одразу приєднуємо дані власника
+    const vehicleData = await prisma.vehicle.findUnique({
+      where: {
+        id: vehicleId,
+      },
+      include: {
+        owner: true, // Зв'язок з моделлю User
+      },
+    });
+
+    if (!vehicleData) {
+      return NextResponse.json(
+        { error: "Pojazd nie został znaleziony" },
+        { status: 404 }
+      );
+    }
+
+    // Форматуємо відповідь
+    const payload = {
+      vehicle: {
+        id: vehicleData.id,
+        brand: vehicleData.brand,
+        model: vehicleData.model,
+        numerRejestracyjny: vehicleData.numerRejestracyjny,
+        rok: vehicleData.rok,
+        stanLicznika: vehicleData.stanLicznika,
+        numerVIN: vehicleData.numerVIN,
+      },
+      user: {
+        id: vehicleData.owner.id,
+        imie: vehicleData.owner.imie,
+        nazwisko: vehicleData.owner.nazwisko,
+        city: vehicleData.owner.city,
+      },
+    };
+
+    return NextResponse.json(payload, { status: 200 });
+  } catch (error) {
+    console.error("Помилка API:", error);
+    return NextResponse.json(
+      { error: "Wystąpił błąd podczas pobierania danych z bazy." },
+      { status: 500 }
+    );
+  }
+}
+</file>
+
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Create Next App",
+  description: "Generated by create next app",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col">{children}</body>
+    </html>
+  );
+}
+</file>
+
+<file path="src/app/uslugi/page.tsx">
+"use client";
+
+import { useRouter } from "next/navigation";
+import { BottomNav } from "@/components/BottomNav";
+
+export default function UslugiPage() {
+  const router = useRouter();
+
+  return (
+    <div className="min-h-screen bg-gray-200 flex justify-center font-sans text-[#1b1b1f]">
+      <main className="relative w-full max-w-[400px] bg-white min-h-screen pb-24 shadow-2xl sm:border-x sm:border-gray-300 overflow-y-auto hide-scrollbar flex flex-col">
+        
+        {/* Status Bar */}
+        <div className="px-6 pt-4 flex justify-between items-center text-[14px] font-bold">
+          <span>9:41</span>
+          <div className="flex gap-1.5 items-center">
+            <svg className="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <div className="h-2.5 w-5 border border-black rounded-[2px] relative">
+              <div className="absolute top-0.5 left-0.5 bottom-0.5 bg-black w-[80%] rounded-[1px]"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Title Section */}
+        <div className="px-6 mt-6">
+          <div className="w-[36px] h-[36px] bg-[#e32129] rounded-[8px] flex items-center justify-center mb-5">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Coat_of_arms_of_Poland.svg" alt="PL" className="w-6 h-6 invert brightness-0" />
+          </div>
+          <h1 className="text-[36px] font-black tracking-tight mb-5">Usługi</h1>
+        </div>
+
+        {/* Search */}
+        <div className="px-6 mb-8">
+          <div className="flex items-center bg-[#efeff0] rounded-xl px-4 py-2.5">
+            <svg className="w-5 h-5 text-[#8e8e93] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" placeholder="Szukaj" className="bg-transparent outline-none w-full text-[17px] font-medium placeholder-[#8e8e93]" />
+          </div>
+        </div>
+
+        {/* Categories */}
+        <div className="px-6 space-y-8 flex-grow">
+          <div>
+            <h2 className="text-[15px] font-extrabold mb-4 opacity-90">Kierowcy i pojazdy</h2>
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_25px_rgba(0,0,0,0.06)] overflow-hidden">
+              <ServiceListItem icon={<SteeringWheelIcon />} label="Kwalifikacje kierowcy" iconColor="text-[#1a56db]" />
+              <ServiceListItem icon={<CarIcon />} label="Historia pojazdu" iconColor="text-[#1a56db]" />
+              <ServiceListItem icon={<MoneyIcon />} label="Sprzedaż pojazdu" iconColor="text-[#1a56db]" isLast={true} onClick={() => router.push('/')} />
+            </div>
+          </div>
+
+          <div className="mb-10">
+            <h2 className="text-[15px] font-extrabold mb-4 opacity-90">Nieruchomość</h2>
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_25px_rgba(0,0,0,0.06)] overflow-hidden">
+              <ServiceListItem icon={<HouseIcon />} label="Umowa najmu mieszkania" iconColor="text-[#16a34a]" />
+              <ServiceListItem icon={<HouseHeartIcon />} label="Umowa najmu okazjonalnego" iconColor="text-[#16a34a]" />
+              <ServiceListItem icon={<BuildingIcon />} label="Umowa użyczenia lokalu" iconColor="text-[#16a34a]" isLast={true} />
+            </div>
+          </div>
+        </div>
+
+        <BottomNav />
+      </main>
+    </div>
+  );
+}
+
+function ServiceListItem({ icon, label, iconColor, isLast, onClick }: any) {
+  return (
+    <div onClick={onClick} className={`flex items-center justify-between px-5 py-4.5 cursor-pointer active:bg-gray-50 transition-colors ${!isLast ? 'border-b border-gray-50' : ''}`}>
+      <div className="flex items-center gap-4">
+        <div className={iconColor}>{icon}</div>
+        <span className="text-[16px] font-bold text-[#1b1b1f]">{label}</span>
+      </div>
+      <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M9 5l7 7-7 7" /></svg>
+    </div>
+  );
+}
+
+// Icons
+const SteeringWheelIcon = () => (<svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9" /><path d="M12 12l3-9M12 12l-3-9M12 12v9" /></svg>);
+const CarIcon = () => (<svg className="w-7 h-7" fill="currentColor"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM19 17H5v-5h14v5z" /></svg>);
+const MoneyIcon = () => (<svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg>);
+const HouseIcon = () => (<svg className="w-7 h-7" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" /></svg>);
+const HouseHeartIcon = () => (<svg className="w-7 h-7" fill="currentColor"><path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 13c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" /></svg>);
+const BuildingIcon = () => (<svg className="w-7 h-7" fill="currentColor"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2z" /></svg>);
+</file>
+
+<file path="src/app/vehicles/sell/[id]/page.tsx">
+"use client";
+
+import { useEffect, useState, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { BottomNav } from "@/components/BottomNav";
+
+type SellVehicleUser = {
+  id: string;
+  imie: string;
+  nazwisko: string;
+};
+
+type SellVehicleData = {
+  id: string;
+  brand: string;
+  model: string;
+  numerRejestracyjny: string;
+  rok: number;
+};
+
+type SellVehicleResponse = {
+  user: SellVehicleUser | null;
+  vehicle: SellVehicleData | null;
+};
+
+export default function SellVehiclePage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+
+  const [data, setData] = useState<SellVehicleResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [price, setPrice] = useState("");
+
+  useEffect(() => {
+    const loadSellDetails = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/vehicles?id=${id}`);
+        if (!response.ok) throw new Error("Nie udało się załadować danych.");
+        const payload = (await response.json()) as SellVehicleResponse;
+        setData(payload);
+      } catch (err: any) {
+        setError(err.message || "Błąd ładowania.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) void loadSellDetails();
+  }, [id]);
+
+  if (loading) return (
+    <div className="min-h-screen bg-[#F8F9FA] flex justify-center items-center">
+      <p className="text-gray-400 animate-pulse font-medium">Ładowanie...</p>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-200 flex justify-center font-sans text-[#1b1b1f]">
+      <main className="relative w-full max-w-[400px] bg-[#F8F9FA] min-h-screen pb-32 shadow-2xl sm:border-x sm:border-gray-300 overflow-y-auto hide-scrollbar flex flex-col">
+        
+        {/* Header / Status Bar Spacing */}
+        <div className="px-6 pt-10 pb-4">
+          <button 
+            onClick={() => router.push('/uslugi')}
+            className="flex items-center text-[#e32129] font-bold text-[17px] active:opacity-60 transition-opacity"
+          >
+            <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Usługi
+          </button>
+          
+          <h1 className="text-[34px] font-black tracking-tight mt-6 leading-tight">
+            Sprzedaż pojazdu
+          </h1>
+        </div>
+
+        <div className="px-5 space-y-6">
+          
+          {/* КАРТКА 1: Pojazd do sprzedaży */}
+          <section className="bg-white rounded-[24px] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-50">
+            <h2 className="text-[17px] font-extrabold mb-5">Pojazd do sprzedaży</h2>
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-start">
+                <span className="text-[#8d8d97] text-[14px] font-medium">Numer rejestracyjny</span>
+                <span className="text-[14px] font-bold text-right">{data?.vehicle?.numerRejestracyjny}</span>
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="text-[#8d8d97] text-[14px] font-medium">Marka i model</span>
+                <span className="text-[14px] font-bold text-right">{data?.vehicle?.brand} {data?.vehicle?.model}</span>
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="text-[#8d8d97] text-[14px] font-medium">Rok produkcji</span>
+                <span className="text-[14px] font-bold text-right">{data?.vehicle?.rok}</span>
+              </div>
+            </div>
+          </section>
+
+          {/* КАРТКА 2: Dane sprzedaży */}
+          <section className="bg-white rounded-[24px] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-50">
+            <h2 className="text-[17px] font-extrabold mb-5">Dane sprzedaży</h2>
+            
+            <div className="mb-6">
+              <label className="text-[12px] font-bold text-[#8d8d97] uppercase tracking-wide block mb-2">
+                Cena sprzedaży (PLN) *
+              </label>
+              <input 
+                type="number" 
+                placeholder="np. 45000"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full bg-[#f2f2f4] rounded-xl px-4 py-4 text-[17px] font-bold outline-none border-2 border-transparent focus:border-[#e32129]/10 transition-all placeholder:text-[#a7a7b0]"
+              />
+            </div>
+
+            <p className="text-[12px] text-[#8d8d97] leading-relaxed font-medium mb-6">
+              Po utworzeniu dokumentu będziesz mógł zaprosić kupującego przez link
+            </p>
+
+            <button 
+              className="w-full bg-[#e32129] text-white py-4 rounded-2xl text-[17px] font-bold shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale"
+              disabled={!price}
+            >
+              Utwórz dokument
+            </button>
+          </section>
+
+          {/* Синя плашка інфо */}
+          <div className="bg-[#eef5ff] rounded-2xl p-4 border border-[#d6e4ff] mb-4">
+            <p className="text-[#1a56db] text-[13px] leading-snug font-medium">
+              Umowa zostanie wygenerowana automatycznie na podstawie danych z rejestru CEPiK i Twoich даних.
+            </p>
+          </div>
+        </div>
+
+        {/* Глобальна навігація */}
+        <BottomNav />
+      </main>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/BottomNav.tsx">
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+export const BottomNav = () => {
+  const pathname = usePathname();
+
+  const navItems = [
+    {
+      label: "Dokumenty",
+      href: "/",
+      // Іконка стопки документів
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      ),
+    },
+    {
+      label: "Usługi",
+      href: "/uslugi",
+      // Іконка папки
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+        </svg>
+      ),
+    },
+    {
+      label: "Kod QR",
+      href: "#",
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+        </svg>
+      ),
+    },
+    {
+      label: "Więcej",
+      href: "#",
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+        </svg>
+      ),
+    },
+  ];
+
+  return (
+    <nav className="fixed bottom-0 left-1/2 z-50 flex w-full max-w-[400px] -translate-x-1/2 items-center justify-around border-t border-gray-200 bg-white/95 px-6 py-3 pb-8 backdrop-blur-md sm:border-x sm:border-gray-300">
+      {navItems.map((item) => {
+        const active = pathname === item.href;
+        return (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={`flex flex-col items-center gap-1 w-16 transition-colors ${
+              active ? "text-[#e32129]" : "text-[#989ca8]"
+            }`}
+          >
+            {item.icon}
+            <span className={`text-[10px] ${active ? "font-bold" : "font-medium"}`}>
+              {item.label}
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+};
+</file>
+
+<file path="src/components/Header.tsx">
+"use client";
+import { useEffect, useState } from "react";
+
+export const Header = ({
+  fullName,
+  initials,
+  loading,
+}: {
+  fullName: string;
+  initials: string;
+  loading: boolean;
+}) => {
+  const [time, setTime] = useState("9:41");
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setTime(
+        now.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })
+      );
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <section className="bg-[#f5f5f7] px-5 pb-4">
+      {/* СТАТУС БАР (Годинник, Сигнал, Wi-Fi, Батарея) */}
+      <div className="flex items-center justify-between pt-3 pb-4 text-black">
+        <span className="text-[15px] font-semibold tracking-tight">{time}</span>
+        
+        <div className="flex items-center gap-1.5">
+          {/* Сигнал сотової мережі */}
+          <div className="flex items-end gap-[1px] h-[10px]">
+            <div className="w-[3px] h-[30%] bg-black rounded-[0.5px]"></div>
+            <div className="w-[3px] h-[50%] bg-black rounded-[0.5px]"></div>
+            <div className="w-[3px] h-[75%] bg-black rounded-[0.5px]"></div>
+            <div className="w-[3px] h-[100%] bg-black rounded-[0.5px]"></div>
+          </div>
+          
+          {/* Wi-Fi */}
+          <svg className="w-[16px] h-[16px]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 21l-12-11.6c4.6-4.6 11.2-5.7 16.8-3.2l2.2-2.2c-6.8-3.6-15.4-2.4-21 3.4l14 13.6 14-13.6c-5.6-5.8-14.2-7-21-3.4l2.2 2.2c5.6-2.5 12.2-1.4 16.8 3.2l-12 11.6z" />
+          </svg>
+
+          {/* Батарея */}
+          <div className="h-[11px] w-[22px] rounded-[3px] border-[1px] border-black/30 p-[1px] relative">
+            <div className="h-full w-[85%] bg-black rounded-[1px]"></div>
+            <div className="absolute -right-[2.5px] top-1/2 -translate-y-1/2 w-[1.5px] h-[4px] bg-black/30 rounded-r-[1px]"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* ВЕРХНІЙ РЯДОК (Логотип, Повідомлення, Дзвіночок) */}
+      <div className="mb-4 flex items-center justify-between">
+        {/* Логотип з гербом */}
+        <div className="flex h-[35px] w-[35px] items-center justify-center rounded-[8px] bg-[#e32129] shadow-sm">
+          <img 
+            src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Coat_of_arms_of_Poland.svg" 
+            alt="Godło" 
+            className="w-6 h-6 invert brightness-0" 
+          />
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Іконка чат-бота */}
+          <svg className="w-7 h-7 text-[#1f1f22]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          
+          {/* Дзвіночок сповіщень */}
+          <svg className="w-7 h-7 text-[#1f1f22]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Заголовок "Dokumenty" та дії */}
+      <div className="flex items-end justify-between">
+        <h1 className="text-[32px] font-bold text-[#1b1b1f] tracking-tight">
+          Dokumenty
+        </h1>
+        
+        <div className="flex items-center gap-3 pb-1">
+          <button className="flex items-center gap-1 text-[#e32129] font-bold text-[14px]">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            Customize
+          </button>
+          <button className="flex items-center gap-1 text-[#e32129] font-bold text-[14px]">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Dodaj
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+</file>
+
+<file path="src/components/QuickActions.tsx">
+export const QuickActions = () => {
+  const actions = ["Dowód osobisty", "Dokumenty", "Płatności"];
+
+  return (
+    <section className="px-5 pt-8">
+      <p className="mb-4 text-[12px] font-bold uppercase tracking-wider text-[#a7a7b0]">
+        Szybkie akcje
+      </p>
+      <div className="grid grid-cols-3 gap-3">
+        {actions.map((label) => (
+          <div
+            key={label}
+            className="rounded-[20px] bg-white px-2 py-5 text-center shadow-[0_4px_15px_rgba(0,0,0,0.03)] flex flex-col items-center justify-center gap-3"
+          >
+            <div className="h-10 w-10 rounded-[14px] bg-[#f2f2f4]" />
+            <p className="text-[12px] font-semibold text-[#44454d] leading-tight px-1">
+              {label}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
+</file>
+
+<file path="src/components/VehicleCarousel.tsx">
+"use client";
+
+import { useRouter } from "next/navigation";
+
+type DashboardVehicle = {
+  id: string;
+  brand: string;
+  model: string;
+  numerRejestracyjny: string;
+  rok: number;
+  stanLicznika: number | null;
+  numerVIN: string;
+};
+
+export const VehicleCarousel = ({
+  vehicles,
+  loading,
+  error,
+}: {
+  vehicles: DashboardVehicle[];
+  loading: boolean;
+  error: string | null;
+}) => {
+  const router = useRouter();
+
+  return (
+    <section className="pt-8 pb-32 w-full">
+      <div className="px-5 mb-4">
+        <p className="text-[12px] font-bold uppercase tracking-wider text-[#a7a7b0]">
+          Mój pojazd
+        </p>
+      </div>
+
+      <div className="flex overflow-x-auto gap-4 px-5 pb-4 snap-x snap-mandatory hide-scrollbar">
+        {error ? (
+          <p className="rounded-xl bg-[#ffe8e8] px-4 py-3 text-sm font-medium text-[#b51a1a] w-full shrink-0">
+            {error}
+          </p>
+        ) : loading ? (
+          <div className="w-[85vw] max-w-[320px] shrink-0 snap-center rounded-[28px] bg-white p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100">
+            <div className="h-6 w-48 rounded bg-[#e2e3e7] mb-2" />
+            <div className="h-32 rounded bg-[#f4f4f6]" />
+          </div>
+        ) : vehicles.length > 0 ? (
+          <>
+            {vehicles.map((vehicle) => (
+              <div
+                key={vehicle.id}
+                className="w-[85vw] max-w-[320px] shrink-0 snap-center rounded-[28px] bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100 flex flex-col gap-5"
+              >
+                <div className="flex gap-4 items-center">
+                  <div className="h-14 w-14 shrink-0 rounded-[16px] bg-[#f2f2f4]" />
+                  <div className="flex flex-col items-start gap-1 min-w-0">
+                    <p className="text-[17px] font-extrabold leading-none text-[#1b1b1f] truncate w-full">
+                      {vehicle.brand} {vehicle.model}
+                    </p>
+                    <span className="inline-flex rounded-lg bg-[#f4f4f6] px-2.5 py-1 text-[12px] font-bold tracking-wider text-[#3f4047]">
+                      {vehicle.numerRejestracyjny}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-4 px-1 text-sm">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#9c9ca3] mb-0.5">Marka</p>
+                    <p className="font-bold text-[#202127] text-[14px] truncate">{vehicle.brand}</p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#9c9ca3] mb-0.5">Model</p>
+                    <p className="font-bold text-[#202127] text-[14px] truncate">{vehicle.model}</p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#9c9ca3] mb-0.5">Rok</p>
+                    <p className="font-bold text-[#202127] text-[14px] truncate">{vehicle.rok}</p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#9c9ca3] mb-0.5">Kolor</p>
+                    <p className="font-bold text-[#202127] text-[14px] truncate">Srebrny</p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#9c9ca3] mb-0.5">VIN</p>
+                    <p className="font-bold text-[#202127] text-[14px] truncate" title={vehicle.numerVIN}>
+                      {vehicle.numerVIN}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#9c9ca3] mb-0.5">OC/AC</p>
+                    <p className="font-bold text-[#202127] text-[14px] truncate">Aktywne</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => router.push(`/vehicles/sell/${vehicle.id}`)}
+                  className="mt-1 w-full rounded-2xl bg-[#e32129] py-3.5 text-[15px] font-bold text-white transition-transform active:scale-[0.98] shadow-md shadow-red-500/20 cursor-pointer"
+                >
+                  Sprzedaj pojazd
+                </button>
+              </div>
+            ))}
+            <div className="w-1 shrink-0"></div>
+          </>
+        ) : (
+          <p className="rounded-xl bg-white p-5 text-sm font-medium text-[#5f6069] w-full text-center shadow-sm shrink-0">
+            Brak pojazdów
+          </p>
+        )}
+      </div>
+    </section>
+  );
+};
+</file>
+
+<file path="src/lib/prisma.ts">
+import { PrismaClient } from "@prisma/client";
+
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient;
+};
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
+</file>
+
+<file path="src/lib/scan-ocr.ts">
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
+import { createWorker } from "tesseract.js";
+
+type OcrResult = {
+  text: string;
+  engine: "pdf-parse" | "tesseract" | "plain-text";
+  styledHtml?: string;
+  layout?: {
+    width: number;
+    height: number;
+    words: number;
+  };
+};
+
+type OcrWord = {
+  text: string;
+  confidence: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+function normalizeText(text: string) {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function buildStyledHtml(words: OcrWord[]) {
+  if (words.length === 0) {
+    return {
+      styledHtml: "",
+      width: 800,
+      height: 1200,
+    };
+  }
+
+  const maxX = Math.max(...words.map((word) => word.left + word.width), 800);
+  const maxY = Math.max(...words.map((word) => word.top + word.height), 1200);
+
+  const wordNodes = words
+    .map((word) => {
+      const fontSize = Math.max(10, Math.round(word.height * 0.82));
+      const safeText = escapeHtml(word.text);
+
+      return `<span data-confidence="${Math.round(word.confidence)}" style="position:absolute;left:${word.left}px;top:${word.top}px;font-size:${fontSize}px;line-height:1.05;white-space:pre;color:#101018;font-family:'Times New Roman',serif;">${safeText}</span>`;
+    })
+    .join("\n");
+
+  const styledHtml = `<section style="position:relative;width:${Math.ceil(maxX + 20)}px;height:${Math.ceil(maxY + 20)}px;background:#fff;border:1px solid #d8d8df;overflow:hidden;">\n${wordNodes}\n</section>`;
+
+  return {
+    styledHtml,
+    width: Math.ceil(maxX + 20),
+    height: Math.ceil(maxY + 20),
+  };
+}
+
+async function extractWithTesseract(buffer: Buffer) {
+  const worker = await createWorker("pol+eng");
+
+  try {
+    const result = await worker.recognize(buffer);
+    const ocrData = result.data as unknown as {
+      text?: string;
+      words?: Array<{
+        text?: string;
+        confidence?: number;
+        bbox?: { x0?: number; y0?: number; x1?: number; y1?: number };
+      }>;
+    };
+
+    const rawWords = Array.isArray(ocrData.words) ? ocrData.words : [];
+
+    const words = rawWords
+      .map((word) => ({
+        text: String(word.text ?? "").trim(),
+        confidence: Number(word.confidence ?? 0),
+        left: Number(word.bbox?.x0 ?? 0),
+        top: Number(word.bbox?.y0 ?? 0),
+        width: Math.max(1, Number((word.bbox?.x1 ?? 0) - (word.bbox?.x0 ?? 0))),
+        height: Math.max(1, Number((word.bbox?.y1 ?? 0) - (word.bbox?.y0 ?? 0))),
+      }))
+      .filter((word) => word.text.length > 0);
+
+    const styled = buildStyledHtml(words);
+
+    return {
+      text: normalizeText(ocrData.text || ""),
+      styledHtml: styled.styledHtml,
+      layout: {
+        width: styled.width,
+        height: styled.height,
+        words: words.length,
+      },
+    };
+  } finally {
+    await worker.terminate();
+  }
+}
+
+export async function extractTextFromScan(file: File): Promise<OcrResult> {
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
+  const mime = (file.type || "").toLowerCase();
+  const fileName = file.name.toLowerCase();
+
+  if (mime.startsWith("text/") || fileName.endsWith(".txt")) {
+    const raw = await file.text();
+
+    return {
+      text: normalizeText(raw),
+      engine: "plain-text",
+    };
+  }
+
+  if (mime === "text/html" || fileName.endsWith(".html") || fileName.endsWith(".htm")) {
+    const html = await file.text();
+
+    return {
+      text: normalizeText(html),
+      engine: "plain-text",
+      styledHtml: html,
+    };
+  }
+
+  if (mime === "application/pdf" || fileName.endsWith(".pdf")) {
+    const parsed = await pdfParse(fileBuffer);
+    const parsedText = normalizeText(parsed.text || "");
+
+    if (parsedText.length > 20) {
+      return {
+        text: parsedText,
+        engine: "pdf-parse",
+      };
+    }
+
+    const ocrResult = await extractWithTesseract(fileBuffer);
+    return {
+      text: ocrResult.text,
+      engine: "tesseract",
+      styledHtml: ocrResult.styledHtml,
+      layout: ocrResult.layout,
+    };
+  }
+
+  const ocrResult = await extractWithTesseract(fileBuffer);
+  return {
+    text: ocrResult.text,
+    engine: "tesseract",
+    styledHtml: ocrResult.styledHtml,
+    layout: ocrResult.layout,
+  };
+}
+</file>
+
+<file path="src/lib/template-analysis.ts">
+const KNOWN_FIELDS: Array<{ key: string; pattern: RegExp; label: string }> = [
+  { key: "imie", pattern: /\b(imie|imię|name)\b/i, label: "Imie" },
+  {
+    key: "nazwisko",
+    pattern: /\b(nazwisko|surname|last\s*name)\b/i,
+    label: "Nazwisko",
+  },
+  { key: "pesel", pattern: /\bpesel\b/i, label: "PESEL" },
+  { key: "nip", pattern: /\bnip\b/i, label: "NIP" },
+  { key: "address", pattern: /\b(adres|address)\b/i, label: "Adres" },
+  { key: "city", pattern: /\b(miasto|city)\b/i, label: "Miasto" },
+  {
+    key: "postCode",
+    pattern: /\b(kod\s*pocztowy|postcode|zip)\b/i,
+    label: "Kod pocztowy",
+  },
+  { key: "numerVIN", pattern: /\bvin\b/i, label: "Numer VIN" },
+  {
+    key: "numerRejestracyjny",
+    pattern: /\b(rejestracyjny|nr\s*rej|tablica)\b/i,
+    label: "Numer rejestracyjny",
+  },
+  { key: "price", pattern: /\b(cena|price|kwota)\b/i, label: "Cena" },
+  {
+    key: "date",
+    pattern: /\b(data|date|dnia)\b/i,
+    label: "Data",
+  },
+];
+
+export type TemplateAnalysisResult = {
+  extractedText: string;
+  fields: string[];
+  labels: Record<string, string>;
+  generatedContent: string;
+};
+
+function buildTemplateContent(fields: string[], labels: Record<string, string>) {
+  const rows = fields
+    .map((field) => {
+      const label = labels[field] ?? field;
+      return `<p><strong>${label}:</strong> {{${field}}}</p>`;
+    })
+    .join("\n");
+
+  return `<section>\n<h2>Dane dokumentu</h2>\n${rows}\n</section>`;
+}
+
+export function analyzeScanText(rawText: string): TemplateAnalysisResult {
+  const normalized = rawText.replace(/\s+/g, " ").trim();
+  const labels: Record<string, string> = {};
+
+  const detected = KNOWN_FIELDS.filter((entry) => entry.pattern.test(normalized));
+
+  const fields =
+    detected.length > 0
+      ? detected.map((entry) => {
+          labels[entry.key] = entry.label;
+          return entry.key;
+        })
+      : ["imie", "nazwisko", "pesel", "address", "city"];
+
+  if (detected.length === 0) {
+    labels.imie = "Imie";
+    labels.nazwisko = "Nazwisko";
+    labels.pesel = "PESEL";
+    labels.address = "Adres";
+    labels.city = "Miasto";
+  }
+
+  return {
+    extractedText: normalized,
+    fields,
+    labels,
+    generatedContent: buildTemplateContent(fields, labels),
+  };
+}
+</file>
+
+<file path="src/types/pdf-parse-lib.d.ts">
+declare module "pdf-parse/lib/pdf-parse.js" {
+  type PdfParseResult = {
+    numpages: number;
+    numrender: number;
+    info: Record<string, unknown>;
+    metadata: Record<string, unknown> | null;
+    text: string;
+    version: string;
+  };
+
+  function pdfParse(dataBuffer: Buffer): Promise<PdfParseResult>;
+
+  export default pdfParse;
+}
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+</file>
+
+<file path="postcss.config.mjs">
+// postcss.config.mjs
+export default {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+</file>
+
+<file path="prisma/schema.prisma">
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String      @id @default(uuid())
+  pesel            String      @unique
+  imie             String
+  nazwisko         String
+  nip              String?
+  id_document      String?
+  city             String
+  postCode         String
+  address          String?
+  cars             Vehicle[]
+  sellerContracts  Contract[]  @relation("Seller")
+  buyerContracts   Contract[]  @relation("Buyer")
+  signatures       ContractSignature[]
+  notifications    Notification[]
+  customTemplates  DocumentTemplate[]
+  createdProcesses DocumentProcess[] @relation("ProcessCreator")
+  joinedProcesses  DocumentProcess[] @relation("ProcessParticipant")
+  createdAt        DateTime    @default(now())
+}
+
+model Vehicle {
+  id                  String     @id @default(uuid())
+  numerRejestracyjny  String     @unique
+  model               String
+  brand               String
+  numerVIN            String     @unique
+  rok                 Int
+  ubezpieczenie       DateTime?
+  badanieTechniczne   DateTime?
+  pierwszaRejestracja DateTime?
+  dataNabyciaPraw     DateTime?
+  formaWlasnosci      String
+  stanLicznika        Int?
+  ownerId             String
+  owner               User       @relation(fields: [ownerId], references: [id])
+  contracts           Contract[]
+  documentProcesses   DocumentProcess[]
+  createdAt           DateTime   @default(now())
+}
+
+model Contract {
+  id            String                  @id @default(uuid())
+  sellerId      String
+  buyerId       String
+  vehicleId     String
+  saleCity      String
+  stanLicznika  Int?
+  price         Decimal                 @db.Decimal(10, 2)
+  status        ContractStatus
+  createdAt     DateTime                @default(now())
+  signedAt      DateTime?
+  seller        User                    @relation("Seller", fields: [sellerId], references: [id])
+  buyer         User                    @relation("Buyer", fields: [buyerId], references: [id])
+  vehicle       Vehicle                 @relation(fields: [vehicleId], references: [id])
+  signatures    ContractSignature[]
+  statusHistory ContractStatusHistory[]
+  documents     DocumentInstance[]
+  messages      EdMessage[]
+}
+
+enum ContractStatus {
+  WAITING_DATA
+  DATA_RECEIVED
+  SELLER_SIGNED
+  CONTRACT_SIGNED
+  DEREGISTERED
+  WAITING_PLATE_CHANGE
+  REGISTERED
+  WAITING_TAX
+  FINISHED
+}
+
+model ContractSignature {
+  id         String   @id @default(uuid())
+  contractId String
+  userId     String
+  signature  String
+  signedAt   DateTime @default(now())
+  contract   Contract @relation(fields: [contractId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model ContractStatusHistory {
+  id         String         @id @default(uuid())
+  contractId String
+  status     ContractStatus
+  createdAt  DateTime       @default(now())
+  contract   Contract       @relation(fields: [contractId], references: [id])
+}
+
+model DocumentTemplate {
+  id               String                 @id @default(uuid())
+  creatorId        String?
+  name             String
+  type             DocumentProcessType
+  source           DocumentTemplateSource @default(SYSTEM)
+  content          String
+  originalFileName String?
+  originalMimeType String?
+  originalScanText String?
+  analysisSchema   Json?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  creator          User?                  @relation(fields: [creatorId], references: [id])
+  instances        DocumentInstance[]
+
+  @@index([creatorId])
+  @@index([type])
+  @@index([source])
+}
+
+enum DocumentTemplateSource {
+  SYSTEM
+  USER_SCAN
+}
+
+model DocumentInstance {
+  id               String           @id @default(uuid())
+  templateId       String
+  contractId       String?
+  processId        String?
+  title            String?
+  status           DocumentInstanceStatus @default(DRAFT)
+  generatedContent String
+  payload          Json?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  template         DocumentTemplate @relation(fields: [templateId], references: [id])
+  contract         Contract?        @relation(fields: [contractId], references: [id])
+  process          DocumentProcess? @relation(fields: [processId], references: [id])
+}
+
+model DocumentProcess {
+  id             String                @id @default(uuid())
+  type           DocumentProcessType
+  status         DocumentProcessStatus @default(DRAFT)
+  creatorId      String
+  participantId  String?
+  vehicleId      String?
+  title          String
+  description    String?
+  sharedToken    String                @unique
+  expiresAt      DateTime?
+  metadata       Json?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  creator        User                  @relation("ProcessCreator", fields: [creatorId], references: [id])
+  participant    User?                 @relation("ProcessParticipant", fields: [participantId], references: [id])
+  vehicle        Vehicle?              @relation(fields: [vehicleId], references: [id])
+  documents      DocumentInstance[]
+
+  @@index([creatorId])
+  @@index([participantId])
+  @@index([vehicleId])
+  @@index([status])
+}
+
+enum DocumentProcessType {
+  CAR_SALE
+  UMOWA_ZLECENIE
+  APLIKACJA_POBYT
+  OTHER
+}
+
+enum DocumentProcessStatus {
+  DRAFT
+  WAITING_PARTICIPANT
+  PARTICIPANT_JOINED
+  IN_REVIEW
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum DocumentInstanceStatus {
+  DRAFT
+  READY
+  SIGNED
+  ARCHIVED
+}
+
+model EdMessage {
+  id         String           @id @default(uuid())
+  contractId String?
+  direction  MessageDirection
+  status     MessageStatus
+  recipient  String?
+  sender     String?
+  subject    String?
+  payload    String
+  externalId String?
+  createdAt  DateTime         @default(now())
+  contract   Contract?        @relation(fields: [contractId], references: [id])
+}
+
+enum MessageDirection {
+  OUTGOING
+  INCOMING
+}
+
+enum MessageStatus {
+  CREATED
+  SENT
+  DELIVERED
+  FAILED
+  PROCESSED
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+</file>
+
+<file path="README.md">
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Prisma
+
+The project includes Prisma with a PostgreSQL datasource configured in `prisma/schema.prisma`.
+
+1. Create a local environment file from `.env.example`
+2. Set `DATABASE_URL` to your PostgreSQL database
+3. Generate the Prisma client:
+
+```bash
+npm run prisma:generate
+```
+
+Useful commands:
+
+```bash
+npm run prisma:migrate
+npm run prisma:seed
+npm run prisma:studio
+```
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+</file>
+
+<file path="src/app/globals.css">
+@import "tailwindcss";
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+</file>
+
+<file path="src/app/page.tsx">
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { Header } from "@/components/Header";
+import { QuickActions } from "@/components/QuickActions";
+import { VehicleCarousel } from "@/components/VehicleCarousel";
+import { BottomNav } from "@/components/BottomNav";
+
+type DashboardUser = {
+  id: string; imie: string; nazwisko: string; city: string;
+};
+
+type DashboardVehicle = {
+  id: string; brand: string; model: string; numerRejestracyjny: string;
+  rok: number; stanLicznika: number | null; numerVIN: string;
+};
+
+type DashboardResponse = {
+  user: DashboardUser | null;
+  vehicle: DashboardVehicle | null;
+};
+
+export default function Home() {
+  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const response = await fetch("/api/dashboard", { cache: "no-store" });
+        if (!response.ok) throw new Error("API failed");
+        const payload = await response.json();
+        setData(payload);
+      } catch {
+        setError("Błąd ładowania danych.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadDashboard();
+  }, []);
+
+  const fullName = useMemo(() => 
+    data?.user ? `${data.user.imie} ${data.user.nazwisko}` : "Użytkownik", 
+  [data]);
+
+  const initials = useMemo(() => {
+    if (!data?.user) return "--";
+    return `${data.user.imie[0]}${data.user.nazwisko[0]}`.toUpperCase();
+  }, [data]);
+
+  const vehiclesList = data?.vehicle ? [data.vehicle] : [];
+
+  return (
+    <div className="min-h-screen bg-gray-200 flex justify-center font-sans">
+      <main className="relative w-full max-w-[400px] bg-[#F8F9FA] min-h-screen pb-24 shadow-2xl sm:border-x sm:border-gray-300 overflow-x-hidden">
+        
+        <Header fullName={fullName} initials={initials} loading={loading} />
+        <QuickActions />
+        <VehicleCarousel vehicles={vehiclesList} loading={loading} error={error} />
+
+        <BottomNav />
+      </main>
+    </div>
+  );
+}
+</file>
+
+<file path="package.json">
+{
+  "name": "hakathon",
+  "version": "0.1.0",
+  "private": true,
+"scripts": {
+  "dev": "next dev --webpack",
+  "build": "next build",
+  "start": "next start",
+  "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "prisma db seed"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.0",
+    "next": "16.2.1",
+    "pdf-parse": "^1.1.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.1",
+    "prisma": "^6.16.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+</file>
+
+</files>
