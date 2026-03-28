@@ -35,7 +35,14 @@ export default function UslugiPage() {
               <div className="bg-white rounded-[24px] shadow-sm border border-gray-100/50 flex flex-col">
                 <ServiceListItem icon={<SteeringWheelIcon />} label="Kwalifikacje kierowcy" iconColor="text-[#1C4ED8]" />
                 <ServiceListItem icon={<CarIcon />} label="Historia pojazdu" iconColor="text-[#1C4ED8]" />
-                <ServiceListItem icon={<MoneyIcon />} label="Sprzedaż pojazdu" iconColor="text-[#1C4ED8]" isLast={true} onClick={() => router.push('/')} />
+                <ServiceListItem 
+                icon={<MoneyIcon />} 
+                label="Sprzedaż pojazdu" 
+                iconColor="text-[#1C4ED8]" 
+                isLast={true} 
+                // ЗМІНЕНО: тепер веде на сторінку /sprzedaz
+                onClick={() => router.push('/sprzedaz')} 
+              />
               </div>
             </div>
 
