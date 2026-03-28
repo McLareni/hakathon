@@ -7,26 +7,14 @@ export default function UslugiPage() {
   const router = useRouter();
 
   return (
-    // Додано sm:py-10, щоб телефон гарно виглядав на великих екранах
-    <div className="min-h-screen bg-[#606164] flex justify-center items-start sm:py-10 font-sans text-[#1b1b1f]">
+    <div className="min-h-screen bg-[#606164] flex justify-center items-start font-sans text-[#1b1b1f]">
       
       {/* ГОЛОВНИЙ КОНТЕЙНЕР (Екран телефону) - додано overflow-hidden та заокруглені кути */}
-      <main className="relative w-full max-w-[414px] bg-[#F8F9FA] min-h-screen sm:min-h-[896px] shadow-2xl sm:rounded-[40px] overflow-hidden flex flex-col">
+      <main className="relative w-full max-w-[414px] bg-[#F8F9FA] min-h-screen sm:min-h-[896px] overflow-hidden flex flex-col">
         
         {/* БЛОК КОНТЕНТУ (Він скролиться, а навігація стоїть на місці) */}
         <div className="flex-1 overflow-y-auto hide-scrollbar flex flex-col pb-6">
-          
-          {/* Header Section */}
-          <div className="px-5 pt-12">
-            <img 
-              src="/Logo.png" 
-              alt="Logo" 
-              className="w-16 h-16 mb-6 object-contain rounded-md shadow-sm" 
-            />
-            <h1 className="text-[34px] font-extrabold text-[#111827] tracking-tight mb-5">Usługi</h1>
-          </div>
 
-          {/* Search */}
           <div className="px-5 mb-6">
             <div className="flex items-center bg-[#EBEBEC] rounded-[10px] px-3 py-2.5">
               <svg className="w-5 h-5 text-[#8e8e93] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
