@@ -24,7 +24,7 @@ export default function UmowaPage() {
               <ChevronLeft size={24} strokeWidth={3} className="mr-1" />
               Usługi
             </button>
-            <h1 className="text-[32px] font-black text-[#1a1e27] tracking-tight leading-tight">
+            <h1 className="text-[28px] font-black text-[#1a1e27] tracking-tight leading-tight">
               Umowa kupna-sprzedaży
             </h1>
           </div>
