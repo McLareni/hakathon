@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { DocumentProcessType, Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -146,6 +146,8 @@ export async function POST(
       where: { id },
       select: {
         id: true,
+        type: true,
+        vehicleId: true,
         creatorId: true,
         participantId: true,
         status: true,
@@ -211,20 +213,43 @@ export async function POST(
       nextSignatures.creatorSignedAt && nextSignatures.participantSignedAt,
     );
 
-    const updated = await prisma.documentProcess.update({
-      where: { id: process.id },
-      data: {
-        status: bothSigned ? "COMPLETED" : "IN_REVIEW",
-        metadata: {
-          ...metadata,
-          signatures: nextSignatures,
-        } as Prisma.InputJsonObject,
-      },
-      select: {
-        id: true,
-        status: true,
-        updatedAt: true,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const updatedProcess = await tx.documentProcess.update({
+        where: { id: process.id },
+        data: {
+          status: bothSigned ? "COMPLETED" : "IN_REVIEW",
+          metadata: {
+            ...metadata,
+            signatures: nextSignatures,
+          } as Prisma.InputJsonObject,
+        },
+        select: {
+          id: true,
+          status: true,
+          updatedAt: true,
+        },
+      });
+
+      // Move ownership to buyer only after both signatures for vehicle sale process.
+      if (
+        bothSigned &&
+        process.type === DocumentProcessType.CAR_SALE &&
+        process.vehicleId &&
+        process.participantId
+      ) {
+        await tx.vehicle.updateMany({
+          where: {
+            id: process.vehicleId,
+            ownerId: process.creatorId,
+          },
+          data: {
+            ownerId: process.participantId,
+            dataNabyciaPraw: new Date(),
+          },
+        });
+      }
+
+      return updatedProcess;
     });
 
     if (bothSigned && process.participantId) {

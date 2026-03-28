@@ -26,6 +26,7 @@ type DashboardVehicle = {
 type DashboardResponse = {
   user: DashboardUser | null;
   vehicle: DashboardVehicle | null;
+  vehicles?: DashboardVehicle[];
 };
 
 type ConditionVehicle = {
@@ -121,7 +122,7 @@ export default function Home() {
     void loadConditions();
   }, [data?.user?.id]);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  const vehiclesList = data?.vehicle ? [data.vehicle] : [];
+  const vehiclesList = data?.vehicles ?? (data?.vehicle ? [data.vehicle] : []);
 
   return (
     <div className="min-h-screen sm:flex sm:justify-center">

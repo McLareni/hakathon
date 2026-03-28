@@ -35,18 +35,66 @@ export default function VehicleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [data, setData] = useState<VehicleResponse | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [officeDataReceived, setOfficeDataReceived] = useState(false);
+  const [plateChoice, setPlateChoice] = useState<"keep" | "new" | null>(null);
+  const [generatedPlate, setGeneratedPlate] = useState<string | null>(null);
+  const [registrationRequestState, setRegistrationRequestState] = useState<"idle" | "pending" | "approved">("idle");
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"blik" | "apple-pay" | "card">("blik");
+  const [paymentState, setPaymentState] = useState<"idle" | "processing" | "paid">("idle");
 
   useEffect(() => {
     if (!id) return;
     const load = async () => {
       try {
-        const res = await fetch(`/api/vehicles?id=${id}`);
-        if (!res.ok) throw new Error("failed");
-        const payload = (await res.json()) as VehicleResponse;
+        const [vehicleRes, dashboardRes, actionsRes] = await Promise.all([
+          fetch(`/api/vehicles?id=${id}`),
+          fetch("/api/dashboard"),
+          fetch(`/api/vehicles/${id}/required-actions`),
+        ]);
+
+        if (!vehicleRes.ok) throw new Error("failed");
+
+        const payload = (await vehicleRes.json()) as VehicleResponse;
         setData(payload);
+
+        if (dashboardRes.ok) {
+          const dashboardPayload = (await dashboardRes.json()) as {
+            user: { id: string } | null;
+          };
+          setCurrentUserId(dashboardPayload.user?.id ?? null);
+        } else {
+          setCurrentUserId(null);
+        }
+
+        // Load persisted state from database
+        if (actionsRes.ok) {
+          const actionsPayload = (await actionsRes.json()) as {
+            state: {
+              officeDataReceived?: boolean;
+              plateChoice?: "keep" | "new" | null;
+              generatedPlate?: string | null;
+              registrationRequestState?: "idle" | "pending" | "approved";
+              paymentState?: "idle" | "processing" | "paid";
+              paymentMethod?: "blik" | "apple-pay" | "card";
+              isPaymentModalOpen?: boolean;
+            };
+          };
+          const state = actionsPayload.state;
+          if (state.officeDataReceived) setOfficeDataReceived(state.officeDataReceived);
+          if (state.plateChoice) setPlateChoice(state.plateChoice);
+          if (state.generatedPlate) setGeneratedPlate(state.generatedPlate);
+          if (state.registrationRequestState)
+            setRegistrationRequestState(state.registrationRequestState);
+          if (state.paymentState) setPaymentState(state.paymentState);
+          if (state.paymentMethod) setPaymentMethod(state.paymentMethod);
+          if (state.isPaymentModalOpen) setIsPaymentModalOpen(state.isPaymentModalOpen);
+        }
       } catch {
         setData(null);
+        setCurrentUserId(null);
       } finally {
         setLoading(false);
       }
@@ -58,7 +106,7 @@ export default function VehicleDetailPage() {
   const u = data?.user;
 
   const vehicleName = v ? `${v.brand} ${v.model}` : "—";
-  const plate = v?.numerRejestracyjny ?? "—";
+  const plate = plateChoice === "new" && generatedPlate ? generatedPlate : (v?.numerRejestracyjny ?? "—");
   const ownerName = u ? `${u.imie} ${u.nazwisko}` : "—";
   const mileage = v?.stanLicznika ? `${v.stanLicznika.toLocaleString("pl-PL")} km` : null;
 
@@ -74,6 +122,112 @@ export default function VehicleDetailPage() {
 
   const inspectionDate = v?.badanieTechniczne ? new Date(v.badanieTechniczne) : null;
   const inspectionValid = inspectionDate ? inspectionDate > now : false;
+
+  const acquisitionDate = v?.dataNabyciaPraw ? new Date(v.dataNabyciaPraw) : null;
+  const isMyVehicle = Boolean(currentUserId && u?.id && currentUserId === u.id);
+  const recentlyBought = acquisitionDate
+    ? now.getTime() - acquisitionDate.getTime() <= 60 * 24 * 60 * 60 * 1000
+    : false;
+  const showRequiredActions = isMyVehicle && recentlyBought;
+  const sellVehicleId = v?.id ?? id;
+
+  const generateRandomPlate = (): string => {
+    const letters = "ABCDEFGHJKLMNPRSTUVWXYZ";
+    const randomLetters = () => letters[Math.floor(Math.random() * letters.length)];
+    const digits = Math.floor(100 + Math.random() * 900);
+    const prefix = [randomLetters(), randomLetters()].join("");
+    const suffix = [randomLetters(), randomLetters()].join("");
+    return `${prefix} ${digits}${suffix}`;
+  };
+
+  useEffect(() => {
+    if (!showRequiredActions) {
+      setOfficeDataReceived(false);
+      setPlateChoice(null);
+      setGeneratedPlate(null);
+      setRegistrationRequestState("idle");
+      setIsPaymentModalOpen(false);
+      setPaymentMethod("blik");
+      setPaymentState("idle");
+      return;
+    }
+
+    // Mock backend flow: office data arrives automatically after a short wait.
+    const timeout = window.setTimeout(() => {
+      setOfficeDataReceived(true);
+    }, 1000);
+
+    return () => window.clearTimeout(timeout);
+  }, [showRequiredActions, id]);
+
+  const saveActionsState = async (newState: {
+    officeDataReceived?: boolean;
+    plateChoice?: "keep" | "new" | null;
+    generatedPlate?: string | null;
+    registrationRequestState?: "idle" | "pending" | "approved";
+    paymentState?: "idle" | "processing" | "paid";
+    paymentMethod?: "blik" | "apple-pay" | "card";
+    isPaymentModalOpen?: boolean;
+  }) => {
+    if (!id) return;
+    try {
+      await fetch(`/api/vehicles/${id}/required-actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newState),
+      });
+    } catch (error) {
+      console.error("Failed to save actions state:", error);
+    }
+  };
+
+  const handleSelectPlateChoice = (choice: "keep" | "new") => {
+    setPlateChoice(choice);
+    if (choice === "new") {
+      setGeneratedPlate((prev) => prev ?? generateRandomPlate());
+    } else if (choice === "keep") {
+      setGeneratedPlate(null);
+    }
+    if (registrationRequestState !== "idle") {
+      setRegistrationRequestState("idle");
+    }
+    saveActionsState({ 
+      plateChoice: choice,
+      ...(choice === "keep" ? { generatedPlate: null } : {})
+    });
+  };
+
+  const handleSendRegistrationRequest = () => {
+    if (!officeDataReceived || !plateChoice || registrationRequestState === "pending") return;
+
+    setRegistrationRequestState("pending");
+    saveActionsState({ registrationRequestState: "pending" });
+
+    // Mock backend response from the office.
+    window.setTimeout(() => {
+      setRegistrationRequestState("approved");
+      saveActionsState({ registrationRequestState: "approved" });
+    }, 3000);
+  };
+
+  const handleOpenPaymentModal = () => {
+    if (paymentState === "paid") return;
+    setIsPaymentModalOpen(true);
+    saveActionsState({ isPaymentModalOpen: true });
+  };
+
+  const handleConfirmPayment = () => {
+    if (paymentState === "processing" || paymentState === "paid") return;
+    setPaymentState("processing");
+    saveActionsState({ paymentState: "processing" });
+
+    // Mock successful payment processing.
+    window.setTimeout(() => {
+      setPaymentState("paid");
+      setIsPaymentModalOpen(false);
+      saveActionsState({ paymentState: "paid", isPaymentModalOpen: false });
+    }, 3000);
+  };
 
   return (
     <div className="min-h-screen sm:flex sm:justify-center">
@@ -114,6 +268,7 @@ export default function VehicleDetailPage() {
           </div>
 
           {/* ── WYMAGANE DZIAŁANIA ── */}
+          {showRequiredActions && (
           <section className="rounded-[18px] bg-white px-5 py-4 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#e31d3b] shrink-0">
@@ -127,17 +282,36 @@ export default function VehicleDetailPage() {
             </p>
 
             {/* Action 1 */}
-            <div className="mb-3 rounded-[14px] border border-[#fff0df] bg-[#fffbf5] p-4">
+            <div className={`mb-3 rounded-[14px] border p-4 ${
+              officeDataReceived
+                ? "border-[#dcfce7] bg-[#f0fdf4]"
+                : "border-[#fff0df] bg-[#fffbf5]"
+            }`}>
               <div className="flex gap-3">
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff0df]">
+                <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                  officeDataReceived ? "bg-[#dcfce7]" : "bg-[#fff0df]"
+                }`}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M9 12l2 2 4-4M7.8 4H16.2C17.8 4 19 5.2 19 6.8V20l-7-3-7 3V6.8C5 5.2 6.2 4 7.8 4z" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9 12l2 2 4-4M7.8 4H16.2C17.8 4 19 5.2 19 6.8V20l-7-3-7 3V6.8C5 5.2 6.2 4 7.8 4z" stroke={officeDataReceived ? "#16a34a" : "#f59e0b"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="text-[13px] font-bold text-[#1a1f2e]">Rejestracja</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[13px] font-bold text-[#1a1f2e]">Wyrejestrowanie pojazdu</p>
+                    {officeDataReceived ? (
+                      <span className="rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[10px] font-semibold text-[#16a34a]">
+                        Otrzymane
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-[#fff0df] px-2 py-0.5 text-[10px] font-semibold text-[#f59e0b]">
+                        Oczekiwanie
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-1 text-[12px] text-[#6b7280]">
-                    Twoje auto właśnie jest w trakcie procesu wyrejestrowania przez poprzedniego właściciela, prosimy o cierpliwość.
+                    {officeDataReceived
+                      ? "Auto zostało zdjęte z rejestracji poprzedniego właściciela. Możesz przejść do przerejestrowania na nową osobę."
+                      : "Czekamy na potwierdzenie wyrejestrowania pojazdu przez urząd. Ten krok zakończy się automatycznie."}
                   </p>
                   <p className="mt-2 text-[11px] font-medium text-[#f59e0b]">
                     Termin: 30 dni od daty zakupu
@@ -147,35 +321,131 @@ export default function VehicleDetailPage() {
             </div>
 
             {/* Action 2 */}
+            <div className={`mb-3 rounded-[14px] border p-4 transition-opacity ${
+              registrationRequestState === "approved"
+                ? "border-[#dcfce7] bg-[#f0fdf4]"
+                : officeDataReceived
+                ? "border-[#fff0df] bg-[#fffbf5]"
+                : "border-[#f3f4f6] bg-[#fafafa] opacity-60"
+            }`}>
+              <div className="flex gap-3">
+                <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                  registrationRequestState === "approved"
+                    ? "bg-[#dcfce7]"
+                    : officeDataReceived ? "bg-[#fff0df]" : "bg-[#f3f4f6]"
+                }`}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 12l2 2 4-4M7.8 4H16.2C17.8 4 19 5.2 19 6.8V20l-7-3-7 3V6.8C5 5.2 6.2 4 7.8 4z" stroke={registrationRequestState === "approved" ? "#16a34a" : officeDataReceived ? "#f59e0b" : "#9ca3af"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[13px] font-bold text-[#1a1f2e]">Rejestracja na nowego właściciela</p>
+                    {registrationRequestState === "approved" ? (
+                      <span className="rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[10px] font-semibold text-[#16a34a]">
+                        Zaakceptowano
+                      </span>
+                    ) : registrationRequestState === "pending" ? (
+                      <span className="rounded-full bg-[#fff0df] px-2 py-0.5 text-[10px] font-semibold text-[#f59e0b]">
+                        Wysłano
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-[12px] text-[#6b7280]">
+                    {officeDataReceived
+                      ? "Możesz teraz rozpocząć rejestrację pojazdu na inną osobę (kupującego)."
+                      : "Ten krok odblokuje się po wyrejestrowaniu pojazdu przez urząd."}
+                  </p>
+                  <p className="mt-2 text-[11px] font-medium text-[#f59e0b]">
+                    Termin: 30 dni od daty zakupu
+                  </p>
+
+                  {officeDataReceived && (
+                    <div className="mt-3 grid grid-cols-1 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPlateChoice("keep")}
+                        disabled={registrationRequestState === "approved"}
+                        className={`rounded-[10px] border px-3 py-2 text-left text-[12px] font-semibold transition-colors ${
+                          registrationRequestState === "approved"
+                            ? "border-[#dcfce7] bg-[#f0fdf4] text-[#16a34a] cursor-not-allowed"
+                            : plateChoice === "keep"
+                            ? "border-[#e31d3b] bg-[#fff1f2] text-[#e31d3b]"
+                            : "border-[#e5e7eb] bg-white text-[#1a1f2e]"
+                        }`}
+                      >
+                        Zostawiam obecny numer: {v?.numerRejestracyjny ?? "—"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPlateChoice("new")}
+                        disabled={registrationRequestState === "approved"}
+                        className={`rounded-[10px] border px-3 py-2 text-left text-[12px] font-semibold transition-colors ${
+                          registrationRequestState === "approved"
+                            ? "border-[#dcfce7] bg-[#f0fdf4] text-[#16a34a] cursor-not-allowed"
+                            : plateChoice === "new"
+                            ? "border-[#e31d3b] bg-[#fff1f2] text-[#e31d3b]"
+                            : "border-[#e5e7eb] bg-white text-[#1a1f2e]"
+                        }`}
+                      >
+                        Weź nowy losowy numer
+                        {generatedPlate ? `: ${generatedPlate}` : ""}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleSendRegistrationRequest}
+                disabled={!officeDataReceived || !plateChoice || registrationRequestState === "pending" || registrationRequestState === "approved"}
+                className="mt-3 w-full rounded-[10px] bg-[#e31d3b] py-2.5 text-[13px] font-bold text-white disabled:bg-[#d1d5db] disabled:text-[#6b7280]"
+              >
+                {registrationRequestState === "pending"
+                  ? "Wysyłanie do urzędu..."
+                  : registrationRequestState === "approved"
+                    ? "Zatwierdzone przez urząd"
+                    : "Zarejestruj na kupującego"}
+              </button>
+            </div>
+
+            {/* Action 3 */}
             <div className="mb-3 rounded-[14px] border border-[#fee2e2] bg-[#fff8f8] p-4">
-              <div className="flex gap-3 mb-3">
+              <div className="flex gap-3">
                 <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fee2e2]">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <path d="M12 22C12 22 3 18 3 11V5L12 2L21 5V11C21 18 12 22 12 22Z" stroke="#e31d3b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="text-[13px] font-bold text-[#1a1f2e]">Dodaj ubezpieczenie OC</p>
+                  <p className="text-[13px] font-bold text-[#1a1f2e]">Ubezpieczenie OC</p>
                   <p className="mt-1 text-[12px] text-[#6b7280]">
-                    Ubezpieczenie OC jest obowiązkowe przed jazdą
+                    Ubezpieczenie OC jest obowiązkowe po zakupie pojazdu. Trzeba zgłosić się do ubezpieczalni, aby dopełnić formalności.
+                  </p>
+                  <p className="mt-2 text-[11px] font-medium text-[#e31d3b]">
+                    Przypomnienie: na dopełnienie formalności masz tylko 1 miesiąc od daty zakupu.
                   </p>
                 </div>
               </div>
-              <button className="w-full rounded-[10px] bg-[#e31d3b] py-2.5 text-[13px] font-bold text-white">
-                Zaktualizować
-              </button>
             </div>
 
-            {/* Action 3 */}
-            <div className="rounded-[14px] border border-[#fee2e2] bg-[#fff8f8] p-4">
+            {/* Action 4 */}
+            <div className={`rounded-[14px] border p-4 ${paymentState === "paid" ? "border-[#dcfce7] bg-[#f0fdf4]" : "border-[#fee2e2] bg-[#fff8f8]"}`}>
               <div className="flex gap-3 mb-3">
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fee2e2]">
+                <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${paymentState === "paid" ? "bg-[#dcfce7]" : "bg-[#fee2e2]"}`}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M2 8.5h20M2 15.5h20M7 3L5 21M12 3l-1 18M17 3l-2 18" stroke="#e31d3b" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M2 8.5h20M2 15.5h20M7 3L5 21M12 3l-1 18M17 3l-2 18" stroke={paymentState === "paid" ? "#16a34a" : "#e31d3b"} strokeWidth="2" strokeLinecap="round"/>
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="text-[13px] font-bold text-[#1a1f2e]">Zapłać podatek od czynności cywilnoprawnych (PCC)</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[13px] font-bold text-[#1a1f2e]">Zapłać podatek od czynności cywilnoprawnych (PCC)</p>
+                    {paymentState === "paid" ? (
+                      <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-semibold text-[#16a34a]">
+                        Opłacone
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="mt-1 text-[12px] text-[#6b7280]">
                     Kwota do zapłaty: 4262 PLN (2% od wartości pojazdu)
                   </p>
@@ -184,11 +454,87 @@ export default function VehicleDetailPage() {
                   </p>
                 </div>
               </div>
-              <button className="w-full rounded-[10px] bg-[#e31d3b] py-2.5 text-[13px] font-bold text-white">
-                Zapłać teraz
+              <button
+                type="button"
+                onClick={handleOpenPaymentModal}
+                disabled={paymentState === "paid"}
+                className="w-full rounded-[10px] bg-[#e31d3b] py-2.5 text-[13px] font-bold text-white disabled:bg-[#d1d5db] disabled:text-[#6b7280]"
+              >
+                {paymentState === "paid" ? "Podatek opłacony" : "Zapłać teraz"}
               </button>
             </div>
           </section>
+          )}
+
+          {isPaymentModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 sm:items-center">
+              <div className="w-full max-w-md rounded-[20px] bg-white p-5 shadow-2xl">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-[16px] font-bold text-[#1a1f2e]">Opłać podatek PCC</h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsPaymentModalOpen(false)}
+                    className="rounded-md px-2 py-1 text-[12px] font-semibold text-[#6b7280]"
+                  >
+                    Zamknij
+                  </button>
+                </div>
+
+                <p className="text-[13px] text-[#6b7280]">
+                  Kwota: <span className="font-bold text-[#1a1f2e]">4262 PLN</span>
+                </p>
+
+                <div className="mt-4 grid grid-cols-1 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("blik")}
+                    className={`rounded-[10px] border px-3 py-2 text-left text-[12px] font-semibold ${
+                      paymentMethod === "blik"
+                        ? "border-[#e31d3b] bg-[#fff1f2] text-[#e31d3b]"
+                        : "border-[#e5e7eb] bg-white text-[#1a1f2e]"
+                    }`}
+                  >
+                    BLIK
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("apple-pay")}
+                    className={`rounded-[10px] border px-3 py-2 text-left text-[12px] font-semibold ${
+                      paymentMethod === "apple-pay"
+                        ? "border-[#e31d3b] bg-[#fff1f2] text-[#e31d3b]"
+                        : "border-[#e5e7eb] bg-white text-[#1a1f2e]"
+                    }`}
+                  >
+                    Apple Pay
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("card")}
+                    className={`rounded-[10px] border px-3 py-2 text-left text-[12px] font-semibold ${
+                      paymentMethod === "card"
+                        ? "border-[#e31d3b] bg-[#fff1f2] text-[#e31d3b]"
+                        : "border-[#e5e7eb] bg-white text-[#1a1f2e]"
+                    }`}
+                  >
+                    Karta płatnicza
+                  </button>
+                </div>
+
+                <div className="mt-4 rounded-xl bg-[#f8fafc] px-3 py-2 text-[11px] text-[#64748b]">
+                  Metoda demonstracyjna: {paymentMethod === "blik" ? "BLIK" : paymentMethod === "apple-pay" ? "Apple Pay" : "Karta płatnicza"}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmPayment}
+                  disabled={paymentState === "processing"}
+                  className="mt-4 w-full rounded-[10px] bg-[#e31d3b] py-2.5 text-[13px] font-bold text-white disabled:bg-[#d1d5db] disabled:text-[#6b7280]"
+                >
+                  {paymentState === "processing" ? "Przetwarzanie płatności..." : "Potwierdź i zapłać"}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* ── DANE PODSTAWOWE ── */}
           <section className="rounded-[18px] bg-white px-5 py-4 shadow-sm">
@@ -355,20 +701,13 @@ export default function VehicleDetailPage() {
           {/* ── AKCJE ── */}
           <section className="flex flex-col gap-3 pb-2">
             <button
-              onClick={() => router.push(`/vehicles/sell/${id}`)}
+              onClick={() => router.push(sellVehicleId ? `/sprzedaz?vehicleId=${encodeURIComponent(sellVehicleId)}` : "/sprzedaz")}
               className="flex items-center justify-center gap-2 w-full rounded-[14px] bg-[#e31d3b] py-4 text-[14px] font-bold text-white shadow-sm"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="white"/>
               </svg>
               Sprzedaj pojazd
-            </button>
-            <button className="flex items-center justify-center gap-2 w-full rounded-[14px] border border-[#d1d5db] bg-white py-4 text-[14px] font-bold text-[#1a1f2e] shadow-sm">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M9 12h6M9 16h6M13 2H6C4.9 2 4 2.9 4 4v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9l-5-7z" stroke="#1a1f2e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M13 2v7h7" stroke="#1a1f2e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Historia pojazdu
             </button>
           </section>
 

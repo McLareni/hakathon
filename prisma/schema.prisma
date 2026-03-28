@@ -30,23 +30,25 @@ model User {
 }
 
 model Vehicle {
-  id                  String     @id @default(uuid())
-  numerRejestracyjny  String     @unique
-  model               String
-  brand               String
-  numerVIN            String     @unique
-  rok                 Int
-  ubezpieczenie       DateTime?
-  badanieTechniczne   DateTime?
-  pierwszaRejestracja DateTime?
-  dataNabyciaPraw     DateTime?
-  formaWlasnosci      String
-  stanLicznika        Int?
-  ownerId             String
-  owner               User       @relation(fields: [ownerId], references: [id])
-  contracts           Contract[]
-  documentProcesses   DocumentProcess[]
-  createdAt           DateTime   @default(now())
+  id                     String     @id @default(uuid())
+  numerRejestracyjny     String     @unique
+  model                  String
+  brand                  String
+
+  numerVIN               String     @unique
+  rok                    Int
+  ubezpieczenie          DateTime?
+  badanieTechniczne      DateTime?
+  pierwszaRejestracja    DateTime?
+  dataNabyciaPraw        DateTime?
+  formaWlasnosci         String
+  stanLicznika           Int?
+  ownerId                String
+  owner                  User       @relation(fields: [ownerId], references: [id])
+  contracts              Contract[]
+  documentProcesses      DocumentProcess[]
+  requiredActionsState   Json?
+  createdAt              DateTime   @default(now())
 }
 
 model Contract {
