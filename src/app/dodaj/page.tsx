@@ -1,24 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { ScanLine, CircleDollarSign } from 'lucide-react';
 import { BottomNav } from "@/components/BottomNav"; // Підключаємо вашу навігацію
 
 export default function DodajDokumentPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[#606164] flex justify-center items-start sm:py-10 font-sans text-[#1b1b1f]">
-      
-      {/* 1. ДОДАНО: flex flex-col для main, щоб правильно розподіляти простір */}
-      <main className="relative w-full max-w-[414px] bg-[#F5F6F8] min-h-screen sm:min-h-[896px] shadow-2xl overflow-hidden sm:rounded-[40px] flex flex-col">
-        
-        {/* 2. ДОДАНО: flex-1 для обгортки контенту. Це змусить цей блок зайняти 
-            увесь вільний простір і виштовхнути BottomNav в самий низ */}
+    <div className="min-h-screen bg-[#F5F5F5] flex justify-center items-start sm:py-10 font-sans text-[#1b1b1f]">
+      <main className="relative w-full max-w-[414px] min-h-screen sm:min-h-[896px] overflow-hidden sm:rounded-[40px] flex flex-col">
         <div className="flex-1 overflow-y-auto hide-scrollbar pb-6">
           
-          {/* Header Section */}
-          <div className="px-6 pt-14 mb-8">
-            {/* Back Button */}
+         
+          <div className="px-6 mb-8">
+            
             <button 
               onClick={() => router.back()} 
               className="w-10 h-10 flex items-center justify-start text-[#e32129] mb-4 hover:opacity-70 transition-opacity"
@@ -41,9 +37,7 @@ export default function DodajDokumentPage() {
             <button className="w-full bg-[#cb2027] rounded-[24px] p-6 flex items-center gap-5 shadow-[0_12px_28px_-8px_rgba(203,32,39,0.55)] hover:bg-[#b91c23] transition-colors active:scale-[0.98]">
               {/* Scan Icon */}
               <div className="text-white flex-shrink-0">
-                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 8V6a2 2 0 012-2h2m10 4V6a2 2 0 00-2-2h-2M5 16v2a2 2 0 002 2h2m10-4v2a2 2 0 01-2 2h-2m-9-5h10" />
-                </svg>
+                <ScanLine className="w-10 h-10" />
               </div>
               <div className="text-left flex flex-col">
                 <span className="text-white font-bold text-[18px]">Zeskanuj PDF</span>
@@ -61,7 +55,7 @@ export default function DodajDokumentPage() {
 
             {/* Grid */}
             <div className="grid grid-cols-2 gap-4">
-              <TemplateCard icon={<ShieldIcon />} title="Ubezpieczenie OC/AC" />
+              <TemplateCard icon={<CircleDollarSign />} title="Sprzedaż pojazdu" />
               <TemplateCard icon={<FileTextIcon />} title="Dowód rejestracyjny" />
               <TemplateCard icon={<WrenchIcon />} title="Książka serwisowa" />
               <TemplateCard icon={<ClipboardIcon />} title="Przegląd techniczny" />
@@ -71,10 +65,6 @@ export default function DodajDokumentPage() {
           </div>
 
         </div> 
-        {/* Кінець блоку контенту (flex-1) */}
-
-        {/* НАВІГАЦІЯ - тепер вона завжди буде притиснута до низу */}
-        <BottomNav />
         
       </main>
     </div>
@@ -96,12 +86,6 @@ function TemplateCard({ icon, title }: { icon: React.ReactNode; title: string })
 }
 
 // ---------------- SVG ІКОНКИ ----------------
-
-const ShieldIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-  </svg>
-);
 
 const FileTextIcon = () => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
