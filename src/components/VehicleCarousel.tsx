@@ -22,7 +22,7 @@ export const VehicleCarousel = ({
   error: string | null;
 }) => {
   return (
-    <section className="w-full px-5 pb-32 pt-5">
+    <section className="flex flex-col gap-4 px-5 pb-32 pt-5">
       {error ? (
         <p className="w-full rounded-xl bg-[#ffe8e8] px-4 py-3 text-sm font-medium text-[#b51a1a]">
           {error}

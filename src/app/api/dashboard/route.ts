@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const DASHBOARD_USER_ID = "b9427598-1055-4e6d-9315-4750df99452b";
+const DASHBOARD_USER_ID = "657c0847-c76e-4786-b6ad-eb289b863f4e";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,10 +21,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         user: null,
         vehicle: null,
+        vehicles: [],
       });
     }
 
     const [vehicle] = user.cars;
+    const vehicles = user.cars.map((car) => ({
+      id: car.id,
+      brand: car.brand,
+      model: car.model,
+      numerRejestracyjny: car.numerRejestracyjny,
+      rok: car.rok,
+      stanLicznika: car.stanLicznika,
+      numerVIN: car.numerVIN,
+    }));
 
     return NextResponse.json({
       user: {
@@ -47,6 +57,7 @@ export async function GET(request: NextRequest) {
             numerVIN: vehicle.numerVIN,
           }
         : null,
+      vehicles,
     });
   } catch {
     return NextResponse.json(

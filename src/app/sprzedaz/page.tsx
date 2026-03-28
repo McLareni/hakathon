@@ -20,6 +20,7 @@ type DashboardVehicle = {
 type DashboardResponse = {
   user: DashboardUser | null;
   vehicle: DashboardVehicle | null;
+  vehicles?: DashboardVehicle[];
 };
 
 export default function SprzedazPojazduPage() {
@@ -38,7 +39,18 @@ export default function SprzedazPojazduPage() {
         const response = await fetch("/api/dashboard", { cache: "no-store" });
         if (!response.ok) throw new Error("Nie udało się załadować danych.");
         const payload = (await response.json()) as DashboardResponse;
-        setData(payload);
+
+        const searchParams = new URLSearchParams(window.location.search);
+        const requestedVehicleId = searchParams.get("vehicleId");
+        const vehicles = payload.vehicles ?? (payload.vehicle ? [payload.vehicle] : []);
+        const requestedVehicle = requestedVehicleId
+          ? vehicles.find((vehicle) => vehicle.id === requestedVehicleId) ?? null
+          : null;
+
+        setData({
+          ...payload,
+          vehicle: requestedVehicle ?? payload.vehicle ?? vehicles[0] ?? null,
+        });
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Błąd ładowania danych.");
       } finally {
