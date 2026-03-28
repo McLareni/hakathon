@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { QuickActions } from "@/components/QuickActions";
 import { VehicleCarousel } from "@/components/VehicleCarousel";
 import { BottomNav } from "@/components/BottomNav";
+import Link from "next/link";
 
 type DashboardUser = {
   id: string;
@@ -54,7 +55,7 @@ export default function Home() {
   return (
     <div className="min-h-screen sm:flex sm:justify-center">
       <main className="relative w-full max-w-107.5 min-h-screen bg-[#F5F5F5] overflow-x-hidden pb-24 sm:min-h-230 sm:shadow-[0_20px_70px_rgba(15,23,42,0.15)]">
-        <div className="flex flex-col p-5 py-0">
+        <div className="flex flex-col p-5 pt-0">
           <h1 className="text-[26px] font-black tracking-[-0.03em] text-[#1a1f2e]">
             Strona główna
           </h1>
@@ -79,25 +80,27 @@ export default function Home() {
               </svg>
               Dostosuj
             </button>
-            <button
-              type="button"
-              className="flex items-center gap-1.5 text-[12px] font-semibold"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
+            <Link href="/dodaj">
+              <button
+                type="button"
+                className="flex items-center gap-1.5 text-[12px] font-semibold"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 5v14M5 12h14"
-                />
-              </svg>
-              Dodaj
-            </button>
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 5v14M5 12h14"
+                  />
+                </svg>
+                Dodaj
+              </button>
+            </Link>
           </div>
         </div>
         <div className="mt-3">
@@ -110,7 +113,6 @@ export default function Home() {
             error={error}
           />
         </div>
-        <BottomNav />
       </main>
     </div>
   );
