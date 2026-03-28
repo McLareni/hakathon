@@ -203,6 +203,12 @@ export default function Home() {
             ) : (
               conditions.map((cond) => {
                 const badge = statusBadge(cond.status);
+                const isVehicleDocument =
+                  cond.type === "CAR_SALE" ||
+                  cond.type === "SALE_PURCHASE" ||
+                  Boolean(cond.vehicle);
+                const firstPartyLabel = isVehicleDocument ? "Sprzedający" : "Strona 1";
+                const secondPartyLabel = isVehicleDocument ? "Kupujący" : "Strona 2";
                 const sellerName = cond.creator
                   ? `${cond.creator.imie} ${cond.creator.nazwisko}`
                   : "—";
@@ -265,13 +271,13 @@ export default function Home() {
 
                     <div className="mt-5 grid grid-cols-2 gap-6 border-b border-[#eceef1] pb-4">
                       <div>
-                        <p className="text-[14px] font-medium text-[#98a1b3]">Sprzedający</p>
+                        <p className="text-[14px] font-medium text-[#98a1b3]">{firstPartyLabel}</p>
                         <p className="mt-1 text-[16px] font-black leading-tight text-[#1a1f2e]">
                           {sellerName}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[14px] font-medium text-[#98a1b3]">Kupujący</p>
+                        <p className="text-[14px] font-medium text-[#98a1b3]">{secondPartyLabel}</p>
                         <p className="mt-1 text-[16px] font-black leading-tight text-[#1a1f2e]">
                           {buyerName}
                         </p>

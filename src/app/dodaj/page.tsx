@@ -1,11 +1,79 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ScanLine, CircleDollarSign } from 'lucide-react';
-import { BottomNav } from "@/components/BottomNav"; // Підключаємо вашу навігацію
+import {
+  ScanLine,
+  CircleDollarSign,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
+
+type DashboardPayload = {
+  user: {
+    id: string;
+  } | null;
+};
+
+type TemplateItem = {
+  id: string;
+  name: string;
+  type: string;
+  source: "SYSTEM" | "USER_SCAN";
+  originalFileName: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type TemplatesPayload = {
+  templates: TemplateItem[];
+};
 
 export default function DodajDokumentPage() {
   const router = useRouter();
+  const [templates, setTemplates] = useState<TemplateItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const dashboardRes = await fetch("/api/dashboard");
+        if (!dashboardRes.ok) {
+          throw new Error("Nie udało się pobrać użytkownika");
+        }
+
+        const dashboardPayload = (await dashboardRes.json()) as DashboardPayload;
+        const userId = dashboardPayload.user?.id;
+
+        const templatesRes = await fetch(
+          userId
+            ? `/api/document-templates?userId=${userId}`
+            : "/api/document-templates",
+        );
+
+        if (!templatesRes.ok) {
+          throw new Error("Nie udało się pobrać szablonów");
+        }
+
+        const templatesPayload = (await templatesRes.json()) as TemplatesPayload;
+        setTemplates(templatesPayload.templates);
+      } catch (loadError) {
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Nie udało się pobrać szablonów",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadTemplates();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] flex justify-center items-start sm:py-10 font-sans text-[#1b1b1f]">
@@ -52,18 +120,38 @@ export default function DodajDokumentPage() {
           <div className="px-6 mb-4">
             <h2 className="text-[18px] font-black text-[#1a1e27] mb-1">Szablony</h2>
             <p className="text-[13px] font-medium text-[#9ca3af] mb-5">
-              Wybierz typ dokumentu do dodania
+              Dostępne szablony systemowe i własne
             </p>
 
-            {/* Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              <TemplateCard icon={<CircleDollarSign />} title="Sprzedaż pojazdu" />
-              <TemplateCard icon={<FileTextIcon />} title="Dowód rejestracyjny" />
-              <TemplateCard icon={<WrenchIcon />} title="Książka serwisowa" />
-              <TemplateCard icon={<ClipboardIcon />} title="Przegląd techniczny" />
-              <TemplateCard icon={<InvoiceIcon />} title="Faktura zakupu" />
-              <TemplateCard icon={<BlankFileIcon />} title="Inny dokument" />
-            </div>
+            {loading ? (
+              <div className="bg-white rounded-[24px] p-6 flex items-center justify-center gap-3 text-[#6b7280] border border-gray-100">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-[14px] font-medium">Ładowanie szablonów...</span>
+              </div>
+            ) : error ? (
+              <div className="bg-[#fff1f2] rounded-[24px] p-5 flex items-start gap-3 border border-[#fecdd3] text-[#9f1239]">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="text-[13px] font-medium leading-relaxed">{error}</p>
+              </div>
+            ) : templates.length === 0 ? (
+              <div className="bg-white rounded-[24px] p-6 border border-gray-100 text-center">
+                <p className="text-[14px] font-medium text-[#6b7280]">
+                  Brak dostępnych szablonów dla tego użytkownika.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {templates.map((template) => (
+                  <TemplateCard
+                    key={template.id}
+                    icon={getTemplateIcon(template.type)}
+                    title={template.name}
+                    meta={template.source === "SYSTEM" ? "Systemowy" : "Własny"}
+                    onClick={() => router.push(`/dodaj/${template.id}`)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
         </div> 
@@ -73,18 +161,47 @@ export default function DodajDokumentPage() {
   );
 }
 
-// Перевикористовуваний компонент картки
-function TemplateCard({ icon, title }: { icon: React.ReactNode; title: string }) {
+function TemplateCard({
+  icon,
+  title,
+  meta,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  meta: string;
+  onClick: () => void;
+}) {
   return (
-    <button className="bg-white rounded-[24px] p-5 flex flex-col items-start justify-start min-h-[145px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100/50 hover:bg-gray-50 active:scale-[0.98] transition-all text-left">
+    <button
+      type="button"
+      onClick={onClick}
+      className="bg-white rounded-[24px] p-5 flex flex-col items-start justify-start min-h-[145px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100/50 hover:bg-gray-50 active:scale-[0.98] transition-all text-left"
+    >
       <div className="w-[42px] h-[42px] rounded-[12px] bg-[#fce8e9] flex items-center justify-center text-[#e32129] mb-4">
         {icon}
       </div>
       <span className="text-[15px] font-bold text-[#1a1e27] leading-[1.3] pr-2">
         {title}
       </span>
+      <span className="mt-2 text-[12px] font-medium text-[#9ca3af]">
+        {meta}
+      </span>
     </button>
   );
+}
+
+function getTemplateIcon(type: string) {
+  switch (type) {
+    case "CAR_SALE":
+      return <CircleDollarSign />;
+    case "UMOWA_ZLECENIE":
+      return <ClipboardIcon />;
+    case "APLIKACJA_POBYT":
+      return <FileTextIcon />;
+    default:
+      return <BlankFileIcon />;
+  }
 }
 
 // ---------------- SVG ІКОНКИ ----------------
@@ -95,23 +212,9 @@ const FileTextIcon = () => (
   </svg>
 );
 
-const WrenchIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
-
 const ClipboardIcon = () => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-  </svg>
-);
-
-const InvoiceIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 0v-4m0 4h.01" />
   </svg>
 );
 

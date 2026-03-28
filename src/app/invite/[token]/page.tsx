@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 
 type InviteProcess = {
   id: string;
+  type: string;
   title: string;
   status: string;
   requestedFields: string[];
@@ -124,6 +125,12 @@ export default function InviteConfirmPage() {
   const sellerName = process
     ? `${process.creator.imie} ${process.creator.nazwisko}`
     : "—";
+  const isVehicleDocument =
+    process?.type === "CAR_SALE" ||
+    process?.type === "SALE_PURCHASE" ||
+    Boolean(process?.vehicle);
+  const firstPartyLabel = isVehicleDocument ? "Sprzedający" : "Strona 1";
+  const secondPartyLabel = isVehicleDocument ? "Kupujący" : "Strona 2";
   const vehicleName = process?.vehicle
     ? `${process.vehicle.brand} ${process.vehicle.model}`
     : "—";
@@ -175,7 +182,7 @@ export default function InviteConfirmPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide mb-0.5">Sprzedający</p>
+                <p className="text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide mb-0.5">{firstPartyLabel}</p>
                 {loading ? (
                   <div className="h-5 w-32 rounded bg-[#eceef1] animate-pulse" />
                 ) : (
@@ -185,32 +192,36 @@ export default function InviteConfirmPage() {
             </div>
 
             {/* Divider */}
-            <div className="h-px bg-[#f0f1f3] mb-4" />
+            {isVehicleDocument ? (
+              <>
+                <div className="h-px bg-[#f0f1f3] mb-4" />
 
-            {/* Vehicle info */}
-            <p className="text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide mb-3">
-              Dane pojazdu do sprzedaży
-            </p>
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] text-[#6b7280]">Pojazd:</span>
-                {loading ? <div className="h-4 w-32 rounded bg-[#eceef1] animate-pulse" /> : <span className="text-[13px] font-bold text-[#1a1f2e]">{vehicleName}</span>}
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] text-[#6b7280]">Nr rej.:</span>
-                {loading ? <div className="h-4 w-24 rounded bg-[#eceef1] animate-pulse" /> : <span className="text-[13px] font-bold text-[#1a1f2e]">{plate}</span>}
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] text-[#6b7280]">Rok:</span>
-                {loading ? <div className="h-4 w-16 rounded bg-[#eceef1] animate-pulse" /> : <span className="text-[13px] font-bold text-[#1a1f2e]">{rok}</span>}
-              </div>
-              {(loading || price) && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] text-[#6b7280]">Cena:</span>
-                  {loading ? <div className="h-5 w-28 rounded bg-[#eceef1] animate-pulse" /> : <span className="text-[15px] font-black text-[#e31d3b]">{price}</span>}
+                {/* Vehicle info */}
+                <p className="text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide mb-3">
+                  Dane pojazdu do sprzedaży
+                </p>
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-[#6b7280]">Pojazd:</span>
+                    {loading ? <div className="h-4 w-32 rounded bg-[#eceef1] animate-pulse" /> : <span className="text-[13px] font-bold text-[#1a1f2e]">{vehicleName}</span>}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-[#6b7280]">Nr rej.:</span>
+                    {loading ? <div className="h-4 w-24 rounded bg-[#eceef1] animate-pulse" /> : <span className="text-[13px] font-bold text-[#1a1f2e]">{plate}</span>}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-[#6b7280]">Rok:</span>
+                    {loading ? <div className="h-4 w-16 rounded bg-[#eceef1] animate-pulse" /> : <span className="text-[13px] font-bold text-[#1a1f2e]">{rok}</span>}
+                  </div>
+                  {(loading || price) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] text-[#6b7280]">Cena:</span>
+                      {loading ? <div className="h-5 w-28 rounded bg-[#eceef1] animate-pulse" /> : <span className="text-[15px] font-black text-[#e31d3b]">{price}</span>}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            ) : null}
           </div>
 
           {/* ── NA CO POTWIERDZASZ ── */}
@@ -230,7 +241,9 @@ export default function InviteConfirmPage() {
               </div>
 
               <p className="text-[13px] text-[#6b7280] leading-relaxed mb-4">
-                Wyrażasz zgodę na przekazanie następujących danych z aplikacji mObywatel sprzedającemu w celu utworzenia umowy kupna-sprzedaży pojazdu:
+                {isVehicleDocument
+                  ? "Wyrażasz zgodę na przekazanie następujących danych z aplikacji mObywatel sprzedającemu w celu utworzenia umowy kupna-sprzedaży pojazdu:"
+                  : "Wyrażasz zgodę na przekazanie następujących danych z aplikacji mObywatel drugiej stronie w celu utworzenia dokumentu:"}
               </p>
 
               <div className="rounded-xl bg-[#eef3ff] px-4 py-4 mb-4 flex flex-col gap-2.5">
@@ -264,7 +277,9 @@ export default function InviteConfirmPage() {
                   <path d="M12 10v4M12 17h.01" stroke="#d97706" strokeWidth="2.2" strokeLinecap="round"/>
                 </svg>
                 <p className="text-[12px] text-[#92400e] leading-relaxed">
-                  Upewnij się, że znasz i ufasz sprzedającemu. Dane będą wykorzystane wyłącznie do sporządzenia umowy kupna-sprzedaży.
+                  {isVehicleDocument
+                    ? "Upewnij się, że znasz i ufasz sprzedającemu. Dane będą wykorzystane wyłącznie do sporządzenia umowy kupna-sprzedaży."
+                    : "Upewnij się, że znasz i ufasz drugiej stronie. Dane będą wykorzystane wyłącznie do sporządzenia dokumentu."}
                 </p>
               </div>
             </div>

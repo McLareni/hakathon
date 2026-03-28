@@ -31,16 +31,16 @@ export default function PotwierdzeniePage() {
                 </svg>
               </div>
               <div>
-                <p className="text-[12px] font-medium text-[#9ca3af]">Sprzedający</p>
+                <p className="text-[12px] font-medium text-[#9ca3af]">Strona 1</p>
                 <p className="text-[18px] leading-none font-black tracking-[-0.02em] text-[#111827] mt-1">Jan Kowalski</p>
               </div>
             </div>
 
             <div className="rounded-2xl bg-[#f3f4f6] p-4">
-              <p className="text-[12px] font-medium text-[#9ca3af] mb-3">Dane pojazdu do sprzedaży</p>
+              <p className="text-[12px] font-medium text-[#9ca3af] mb-3">Szczegóły dokumentu</p>
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center">
-                  <span className="text-[13px] text-[#9ca3af]">Pojazd:</span>
+                  <span className="text-[13px] text-[#9ca3af]">Przedmiot:</span>
                   <span className="text-[13px] leading-none font-black tracking-[-0.02em] text-[#111827]">Toyota Corolla 1.8</span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -72,7 +72,7 @@ export default function PotwierdzeniePage() {
                 <p className="text-[14px] font-black text-[#1d4ed8]">Udostępnienie danych osobowych</p>
               </div>
               <p className="text-[13px] text-[#1d4ed8] leading-relaxed">
-                Wyrażasz zgodę na przekazanie następujących danych z aplikacji mObywatel sprzedającemu w celu utworzenia umowy kupna-sprzedaży pojazdu:
+                Wyrażasz zgodę na przekazanie następujących danych z aplikacji mObywatel drugiej stronie w celu utworzenia dokumentu:
               </p>
             </div>
 
@@ -84,7 +84,7 @@ export default function PotwierdzeniePage() {
 
             <div className="rounded-2xl border border-[#f5d868] bg-[#fff7d6] px-4 py-3">
               <p className="text-[13px] leading-relaxed text-[#92400e]">
-                <span className="font-bold">⚠</span> Upewnij się, że znasz i ufasz sprzedającemu. Dane będą wykorzystane wyłącznie do sporządzenia umowy kupna-sprzedaży.
+                <span className="font-bold">⚠</span> Upewnij się, że znasz i ufasz drugiej stronie. Dane będą wykorzystane wyłącznie do sporządzenia dokumentu.
               </p>
             </div>
           </section>
