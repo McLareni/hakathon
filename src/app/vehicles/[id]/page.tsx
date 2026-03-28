@@ -35,18 +35,35 @@ export default function VehicleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [data, setData] = useState<VehicleResponse | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [officeDataReceived, setOfficeDataReceived] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     const load = async () => {
       try {
-        const res = await fetch(`/api/vehicles?id=${id}`);
-        if (!res.ok) throw new Error("failed");
-        const payload = (await res.json()) as VehicleResponse;
+        const [vehicleRes, dashboardRes] = await Promise.all([
+          fetch(`/api/vehicles?id=${id}`),
+          fetch("/api/dashboard"),
+        ]);
+
+        if (!vehicleRes.ok) throw new Error("failed");
+
+        const payload = (await vehicleRes.json()) as VehicleResponse;
         setData(payload);
+
+        if (dashboardRes.ok) {
+          const dashboardPayload = (await dashboardRes.json()) as {
+            user: { id: string } | null;
+          };
+          setCurrentUserId(dashboardPayload.user?.id ?? null);
+        } else {
+          setCurrentUserId(null);
+        }
       } catch {
         setData(null);
+        setCurrentUserId(null);
       } finally {
         setLoading(false);
       }
@@ -74,6 +91,27 @@ export default function VehicleDetailPage() {
 
   const inspectionDate = v?.badanieTechniczne ? new Date(v.badanieTechniczne) : null;
   const inspectionValid = inspectionDate ? inspectionDate > now : false;
+
+  const acquisitionDate = v?.dataNabyciaPraw ? new Date(v.dataNabyciaPraw) : null;
+  const isMyVehicle = Boolean(currentUserId && u?.id && currentUserId === u.id);
+  const recentlyBought = acquisitionDate
+    ? now.getTime() - acquisitionDate.getTime() <= 60 * 24 * 60 * 60 * 1000
+    : false;
+  const showRequiredActions = isMyVehicle && recentlyBought;
+
+  useEffect(() => {
+    if (!showRequiredActions) {
+      setOfficeDataReceived(false);
+      return;
+    }
+
+    // Mock backend flow: office data arrives automatically after a short wait.
+    const timeout = window.setTimeout(() => {
+      setOfficeDataReceived(true);
+    }, 1000);
+
+    return () => window.clearTimeout(timeout);
+  }, [showRequiredActions, id]);
 
   return (
     <div className="min-h-screen sm:flex sm:justify-center">
@@ -114,6 +152,7 @@ export default function VehicleDetailPage() {
           </div>
 
           {/* ── WYMAGANE DZIAŁANIA ── */}
+          {showRequiredActions && (
           <section className="rounded-[18px] bg-white px-5 py-4 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#e31d3b] shrink-0">
@@ -135,9 +174,22 @@ export default function VehicleDetailPage() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="text-[13px] font-bold text-[#1a1f2e]">Rejestracja</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[13px] font-bold text-[#1a1f2e]">Wyrejestrowanie pojazdu</p>
+                    {officeDataReceived ? (
+                      <span className="rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[10px] font-semibold text-[#16a34a]">
+                        Otrzymane
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-[#fff0df] px-2 py-0.5 text-[10px] font-semibold text-[#f59e0b]">
+                        Oczekiwanie
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-1 text-[12px] text-[#6b7280]">
-                    Twoje auto właśnie jest w trakcie procesu wyrejestrowania przez poprzedniego właściciela, prosimy o cierpliwość.
+                    {officeDataReceived
+                      ? "Auto zostało zdjęte z rejestracji poprzedniego właściciela. Możesz przejść do przerejestrowania na nową osobę."
+                      : "Czekamy na potwierdzenie wyrejestrowania pojazdu przez urząd. Ten krok zakończy się automatycznie."}
                   </p>
                   <p className="mt-2 text-[11px] font-medium text-[#f59e0b]">
                     Termin: 30 dni od daty zakupu
@@ -147,6 +199,40 @@ export default function VehicleDetailPage() {
             </div>
 
             {/* Action 2 */}
+            <div className={`mb-3 rounded-[14px] border p-4 transition-opacity ${
+              officeDataReceived
+                ? "border-[#fff0df] bg-[#fffbf5]"
+                : "border-[#f3f4f6] bg-[#fafafa] opacity-60"
+            }`}>
+              <div className="flex gap-3">
+                <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                  officeDataReceived ? "bg-[#fff0df]" : "bg-[#f3f4f6]"
+                }`}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 12l2 2 4-4M7.8 4H16.2C17.8 4 19 5.2 19 6.8V20l-7-3-7 3V6.8C5 5.2 6.2 4 7.8 4z" stroke={officeDataReceived ? "#f59e0b" : "#9ca3af"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[13px] font-bold text-[#1a1f2e]">Rejestracja na nowego właściciela</p>
+                  <p className="mt-1 text-[12px] text-[#6b7280]">
+                    {officeDataReceived
+                      ? "Możesz teraz rozpocząć rejestrację pojazdu na inną osobę (kupującego)."
+                      : "Ten krok odblokuje się po wyrejestrowaniu pojazdu przez urząd."}
+                  </p>
+                  <p className="mt-2 text-[11px] font-medium text-[#f59e0b]">
+                    Termin: 30 dni od daty zakupu
+                  </p>
+                </div>
+              </div>
+              <button
+                disabled={!officeDataReceived}
+                className="mt-3 w-full rounded-[10px] bg-[#e31d3b] py-2.5 text-[13px] font-bold text-white disabled:bg-[#d1d5db] disabled:text-[#6b7280]"
+              >
+                Zarejestruj na kupującego
+              </button>
+            </div>
+
+            {/* Action 3 */}
             <div className="mb-3 rounded-[14px] border border-[#fee2e2] bg-[#fff8f8] p-4">
               <div className="flex gap-3 mb-3">
                 <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fee2e2]">
@@ -166,7 +252,7 @@ export default function VehicleDetailPage() {
               </button>
             </div>
 
-            {/* Action 3 */}
+            {/* Action 4 */}
             <div className="rounded-[14px] border border-[#fee2e2] bg-[#fff8f8] p-4">
               <div className="flex gap-3 mb-3">
                 <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fee2e2]">
@@ -189,6 +275,7 @@ export default function VehicleDetailPage() {
               </button>
             </div>
           </section>
+          )}
 
           {/* ── DANE PODSTAWOWE ── */}
           <section className="rounded-[18px] bg-white px-5 py-4 shadow-sm">
@@ -362,13 +449,6 @@ export default function VehicleDetailPage() {
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="white"/>
               </svg>
               Sprzedaj pojazd
-            </button>
-            <button className="flex items-center justify-center gap-2 w-full rounded-[14px] border border-[#d1d5db] bg-white py-4 text-[14px] font-bold text-[#1a1f2e] shadow-sm">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M9 12h6M9 16h6M13 2H6C4.9 2 4 2.9 4 4v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9l-5-7z" stroke="#1a1f2e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M13 2v7h7" stroke="#1a1f2e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Historia pojazdu
             </button>
           </section>
 
