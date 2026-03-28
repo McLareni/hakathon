@@ -17,6 +17,7 @@ type VehicleDetail = {
   badanieTechniczne: string | null;
   pierwszaRejestracja: string | null;
   dataNabyciaPraw: string | null;
+  purchasePrice: number | null;
 };
 
 type Owner = {
@@ -104,6 +105,18 @@ export default function VehicleDetailPage() {
 
   const v = data?.vehicle;
   const u = data?.user;
+  const pccRate = 0.02;
+  const pccAmount =
+    typeof v?.purchasePrice === "number" && Number.isFinite(v.purchasePrice)
+      ? Math.round(v.purchasePrice * pccRate * 100) / 100
+      : null;
+  const formatMoney = (value: number | null) =>
+    typeof value === "number"
+      ? `${value.toLocaleString("pl-PL", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} PLN`
+      : "—";
 
   const vehicleName = v ? `${v.brand} ${v.model}` : "—";
   const plate = plateChoice === "new" && generatedPlate ? generatedPlate : (v?.numerRejestracyjny ?? "—");
@@ -207,7 +220,7 @@ export default function VehicleDetailPage() {
     window.setTimeout(() => {
       setRegistrationRequestState("approved");
       saveActionsState({ registrationRequestState: "approved" });
-    }, 3000);
+    }, 4000);
   };
 
   const handleOpenPaymentModal = () => {
@@ -226,7 +239,7 @@ export default function VehicleDetailPage() {
       setPaymentState("paid");
       setIsPaymentModalOpen(false);
       saveActionsState({ paymentState: "paid", isPaymentModalOpen: false });
-    }, 3000);
+    }, 4000);
   };
 
   return (
@@ -447,7 +460,7 @@ export default function VehicleDetailPage() {
                     ) : null}
                   </div>
                   <p className="mt-1 text-[12px] text-[#6b7280]">
-                    Kwota do zapłaty: 4262 PLN (2% od wartości pojazdu)
+                    Kwota do zapłaty: {formatMoney(pccAmount)} (2% od wartości pojazdu)
                   </p>
                   <p className="mt-1 text-[11px] font-medium text-[#e31d3b]">
                     Termin: 14 dni od daty zakupu
@@ -481,7 +494,7 @@ export default function VehicleDetailPage() {
                 </div>
 
                 <p className="text-[13px] text-[#6b7280]">
-                  Kwota: <span className="font-bold text-[#1a1f2e]">4262 PLN</span>
+                  Kwota: <span className="font-bold text-[#1a1f2e]">{formatMoney(pccAmount)}</span>
                 </p>
 
                 <div className="mt-4 grid grid-cols-1 gap-2">

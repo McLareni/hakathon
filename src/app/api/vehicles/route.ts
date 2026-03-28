@@ -1,5 +1,24 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+
+function extractSalePrice(metadata: Prisma.JsonValue | null): number | null {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+
+  const raw = (metadata as { salePrice?: unknown }).salePrice;
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return raw;
+  }
+
+  if (typeof raw === "string") {
+    const parsed = Number(raw.replace(",", "."));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
 
 export async function GET(request: Request) {
   try {
@@ -21,6 +40,18 @@ export async function GET(request: Request) {
       },
       include: {
         owner: true, // Зв'язок з моделлю User
+        contracts: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { price: true },
+        },
+        documentProcesses: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          select: {
+            metadata: true,
+          },
+        },
       },
     });
 
@@ -30,6 +61,16 @@ export async function GET(request: Request) {
         { status: 404 }
       );
     }
+
+    const processSalePrice =
+      vehicleData.documentProcesses
+        .map((process) => extractSalePrice(process.metadata))
+        .find((value): value is number => value != null) ?? null;
+
+    const purchasePrice =
+      vehicleData.contracts[0]?.price != null
+        ? Number(vehicleData.contracts[0].price)
+        : processSalePrice;
 
     // Форматуємо відповідь
     const payload = {
@@ -46,6 +87,7 @@ export async function GET(request: Request) {
         badanieTechniczne: vehicleData.badanieTechniczne?.toISOString() ?? null,
         pierwszaRejestracja: vehicleData.pierwszaRejestracja?.toISOString() ?? null,
         dataNabyciaPraw: vehicleData.dataNabyciaPraw?.toISOString() ?? null,
+        purchasePrice,
       },
       user: {
         id: vehicleData.owner.id,

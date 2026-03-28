@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { 
   X, 
@@ -11,8 +12,98 @@ import {
 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 
+type DashboardPayload = {
+  user: {
+    id: string;
+  } | null;
+};
+
+type ConditionData = {
+  id: string;
+  type: string;
+  title: string;
+  status: string;
+  createdAt: string;
+  vehicle: {
+    id: string;
+    brand: string;
+    model: string;
+    numerRejestracyjny: string;
+    rok: number;
+  } | null;
+  salePrice?: number | null;
+};
+
 export default function GratulacjePage() {
   const router = useRouter();
+  const [processId, setProcessId] = useState<string | null>(null);
+
+  const [condition, setCondition] = useState<ConditionData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setProcessId(params.get("processId"));
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!processId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const dashboardRes = await fetch("/api/dashboard", { cache: "no-store" });
+        if (!dashboardRes.ok) {
+          throw new Error("Nie udało się pobrać użytkownika");
+        }
+
+        const dashboard = (await dashboardRes.json()) as DashboardPayload;
+        const userId = dashboard.user?.id;
+        if (!userId) {
+          throw new Error("Brak użytkownika");
+        }
+
+        const conditionRes = await fetch(
+          `/api/conditions/${processId}?userId=${userId}`,
+          { cache: "no-store" },
+        );
+        if (!conditionRes.ok) {
+          throw new Error("Nie udało się pobrać dokumentu");
+        }
+
+        const payload = (await conditionRes.json()) as ConditionData;
+        setCondition(payload);
+      } catch {
+        setCondition(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void load();
+  }, [processId]);
+
+  const isVehicleDocument =
+    condition?.type === "CAR_SALE" || condition?.type === "SALE_PURCHASE";
+  const vehicleLabel = condition?.vehicle
+    ? `${condition.vehicle.brand} ${condition.vehicle.model}`
+    : "—";
+  const vehiclePlate = condition?.vehicle?.numerRejestracyjny ?? "—";
+  const vehicleYear = condition?.vehicle?.rok ? String(condition.vehicle.rok) : "—";
+  const salePrice =
+    typeof condition?.salePrice === "number" && Number.isFinite(condition.salePrice)
+      ? condition.salePrice
+      : null;
+  const pccAmount = salePrice != null ? Math.round(salePrice * 0.02 * 100) / 100 : null;
+  const formatMoney = (value: number | null) =>
+    typeof value === "number"
+      ? `${value.toLocaleString("pl-PL", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} PLN`
+      : "—";
 
   return (
     <div className="min-h-screen bg-[#606164] flex justify-center items-start  font-sans text-[#1b1b1f]">
@@ -40,25 +131,39 @@ export default function GratulacjePage() {
               <Check size={28} strokeWidth={3} />
             </div>
             <h2 className="text-[17px] font-bold text-[#1a1e27]">
-              Dokument został podpisany.
+              {loading ? "Ładowanie danych..." : "Dokument został podpisany."}
             </h2>
           </div>
 
-          {/* Картка інформації про авто */}
+          {/* Картка informacji o dokumencie */}
           <div className="bg-white rounded-[24px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 mb-6">
-            <h2 className="text-[16px] font-bold text-[#1a1e27] mb-5">Twój nowy pojazd</h2>
+            <h2 className="text-[16px] font-bold text-[#1a1e27] mb-5">
+              {isVehicleDocument ? "Twój nowy pojazd" : "Szczegóły dokumentu"}
+            </h2>
             <div className="space-y-3">
               <div className="flex justify-between items-center text-[14px]">
-                <span className="text-[#9ca3af] font-medium">Nr rejestracyjny</span>
-                <span className="text-[#1a1e27] font-bold">WA 8823K</span>
+                <span className="text-[#9ca3af] font-medium">
+                  {isVehicleDocument ? "Nr rejestracyjny" : "ID dokumentu"}
+                </span>
+                <span className="text-[#1a1e27] font-bold">
+                  {loading ? "—" : isVehicleDocument ? vehiclePlate : (condition?.id ?? "—")}
+                </span>
               </div>
               <div className="flex justify-between items-center text-[14px]">
-                <span className="text-[#9ca3af] font-medium">Marka i model</span>
-                <span className="text-[#1a1e27] font-bold text-right ml-4">Toyota Corolla 1.8</span>
+                <span className="text-[#9ca3af] font-medium">
+                  {isVehicleDocument ? "Marka i model" : "Tytuł"}
+                </span>
+                <span className="text-[#1a1e27] font-bold text-right ml-4">
+                  {loading ? "—" : isVehicleDocument ? vehicleLabel : (condition?.title ?? "—")}
+                </span>
               </div>
               <div className="flex justify-between items-center text-[14px]">
-                <span className="text-[#9ca3af] font-medium">Rok produkcji</span>
-                <span className="text-[#1a1e27] font-bold">2021</span>
+                <span className="text-[#9ca3af] font-medium">
+                  {isVehicleDocument ? "Rok produkcji" : "Status"}
+                </span>
+                <span className="text-[#1a1e27] font-bold">
+                  {loading ? "—" : isVehicleDocument ? vehicleYear : (condition?.status ?? "—")}
+                </span>
               </div>
             </div>
           </div>
@@ -95,7 +200,7 @@ export default function GratulacjePage() {
                 iconBg="bg-[#fce8e9]" 
                 iconColor="text-[#e32129]" 
                 title="Zapłać podatek (PCC)" 
-                desc="Kwota do zapłaty: 4262 PLN (2% od wartości)"
+                desc={`Kwota do zapłaty: ${formatMoney(pccAmount)} (2% od wartości)`}
                 deadline="Termin: 14 dni od daty zakupu"
               />
             </div>
@@ -110,10 +215,12 @@ export default function GratulacjePage() {
 
           {/* Кнопка переходу */}
           <button 
-            onClick={() => router.push('/')}
+            onClick={() =>
+              router.push(condition?.vehicle?.id ? `/vehicles/${condition.vehicle.id}` : "/")
+            }
             className="w-full bg-[#e32129] text-white font-bold text-[16px] rounded-[16px] py-4 shadow-[0_8px_20px_-6px_rgba(227,33,41,0.5)] hover:bg-[#cb2027] transition-colors active:scale-95 mb-6"
           >
-            Otwórz ekran samochodu
+            {condition?.vehicle?.id ? "Otwórz ekran samochodu" : "Wróć do strony głównej"}
           </button>
 
         </div>
@@ -126,7 +233,21 @@ export default function GratulacjePage() {
 }
 
 // Допоміжний компонент для пунктів списку дій
-function ActionItem({ icon, iconBg, iconColor, title, desc, deadline }: any) {
+function ActionItem({
+  icon,
+  iconBg,
+  iconColor,
+  title,
+  desc,
+  deadline,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  iconColor: string;
+  title: string;
+  desc: string;
+  deadline?: string;
+}) {
   return (
     <div className="flex gap-4">
       <div className={`w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center ${iconBg} ${iconColor}`}>
