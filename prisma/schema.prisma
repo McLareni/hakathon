@@ -10,6 +10,7 @@ datasource db {
 model User {
   id               String      @id @default(uuid())
   pesel            String      @unique
+  phoneNumber      String?     @unique
   imie             String
   nazwisko         String
   nip              String?

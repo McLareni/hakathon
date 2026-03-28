@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 type ConfirmPayload = {
-  participantId?: string;
+  participantPhone?: string;
   participantData?: Record<string, string>;
 };
 
@@ -11,8 +11,13 @@ type MetadataShape = {
   requestLanguage?: "pl";
   requestedFields?: string[];
   participantData?: Record<string, string>;
+  participantPhone?: string;
   confirmedAt?: string;
 };
+
+function normalizePhone(phone: string) {
+  return phone.replace(/\s+/g, "").trim();
+}
 
 function parseMetadata(value: Prisma.JsonValue | null): MetadataShape {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -79,9 +84,9 @@ export async function POST(
     const { token } = await context.params;
     const body = (await request.json()) as ConfirmPayload;
 
-    if (!body.participantId || !body.participantData) {
+    if (!body.participantPhone || !body.participantData) {
       return NextResponse.json(
-        { error: "participantId and participantData are required" },
+        { error: "participantPhone and participantData are required" },
         { status: 400 },
       );
     }
@@ -105,29 +110,30 @@ export async function POST(
       return NextResponse.json({ error: "Request expired" }, { status: 410 });
     }
 
-    if (process.creatorId === body.participantId) {
+    const normalizedPhone = normalizePhone(body.participantPhone);
+    const participant = await prisma.user.findUnique({
+      where: { phoneNumber: normalizedPhone },
+      select: { id: true, phoneNumber: true },
+    });
+
+    if (!participant) {
+      return NextResponse.json(
+        { error: "Participant with this phone number not found" },
+        { status: 404 },
+      );
+    }
+
+    if (process.creatorId === participant.id) {
       return NextResponse.json(
         { error: "Creator cannot confirm as participant" },
         { status: 400 },
       );
     }
 
-    if (process.participantId && process.participantId !== body.participantId) {
+    if (process.participantId && process.participantId !== participant.id) {
       return NextResponse.json(
         { error: "Another participant already confirmed this request" },
         { status: 409 },
-      );
-    }
-
-    const participant = await prisma.user.findUnique({
-      where: { id: body.participantId },
-      select: { id: true },
-    });
-
-    if (!participant) {
-      return NextResponse.json(
-        { error: "Participant not found" },
-        { status: 404 },
       );
     }
 
@@ -136,10 +142,11 @@ export async function POST(
     const updated = await prisma.documentProcess.update({
       where: { id: process.id },
       data: {
-        participantId: body.participantId,
+        participantId: participant.id,
         status: "PARTICIPANT_JOINED",
         metadata: {
           ...previousMeta,
+          participantPhone: normalizedPhone,
           participantData: body.participantData,
           confirmedAt: new Date().toISOString(),
         } as Prisma.InputJsonObject,

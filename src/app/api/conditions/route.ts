@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 type CreateRequestPayload = {
   creatorId?: string;
+  participantPhone?: string;
   title?: string;
   description?: string;
   language?: "pl";
@@ -16,6 +17,10 @@ type CreateRequestPayload = {
 
 function makeToken() {
   return randomUUID().replaceAll("-", "");
+}
+
+function normalizePhone(phone: string) {
+  return phone.replace(/\s+/g, "").trim();
 }
 
 export async function GET(request: NextRequest) {
@@ -57,6 +62,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as CreateRequestPayload;
     const {
       creatorId,
+      participantPhone,
       title,
       description,
       language,
@@ -66,9 +72,9 @@ export async function POST(request: NextRequest) {
       type,
     } = body;
 
-    if (!creatorId || !title) {
+    if (!creatorId || !title || !participantPhone) {
       return NextResponse.json(
-        { error: "creatorId and title are required" },
+        { error: "creatorId, participantPhone and title are required" },
         { status: 400 },
       );
     }
@@ -87,6 +93,26 @@ export async function POST(request: NextRequest) {
 
     if (!creator) {
       return NextResponse.json({ error: "Creator not found" }, { status: 404 });
+    }
+
+    const normalizedPhone = normalizePhone(participantPhone);
+    const participant = await prisma.user.findUnique({
+      where: { phoneNumber: normalizedPhone },
+      select: { id: true, phoneNumber: true },
+    });
+
+    if (!participant) {
+      return NextResponse.json(
+        { error: "Participant with this phone number not found" },
+        { status: 404 },
+      );
+    }
+
+    if (participant.id === creatorId) {
+      return NextResponse.json(
+        { error: "Creator cannot request data from own phone number" },
+        { status: 400 },
+      );
     }
 
     if (vehicleId) {
@@ -126,11 +152,13 @@ export async function POST(request: NextRequest) {
         description: description?.trim() || null,
         type: type ?? DocumentProcessType.OTHER,
         status: "WAITING_PARTICIPANT",
+        participantId: participant.id,
         sharedToken: makeToken(),
         expiresAt: new Date(Date.now() + validHours * 60 * 60 * 1000),
         metadata: {
           requestLanguage: safeLanguage,
           requestedFields: safeRequestedFields,
+          participantPhone: normalizedPhone,
         } as Prisma.InputJsonObject,
       },
       select: {
