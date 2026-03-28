@@ -34,7 +34,9 @@ export default function DodajDokumentPage() {
 
           {/* Scan PDF Button */}
           <div className="px-6 mb-8">
-            <button className="w-full bg-[#cb2027] rounded-[24px] p-6 flex items-center gap-5 shadow-[0_12px_28px_-8px_rgba(203,32,39,0.55)] hover:bg-[#b91c23] transition-colors active:scale-[0.98]">
+            <button 
+            onClick={() => router.push('/wgraj')}
+            className="w-full bg-[#cb2027] rounded-[24px] p-6 flex items-center gap-5 shadow-[0_12px_28px_-8px_rgba(203,32,39,0.55)] hover:bg-[#b91c23] transition-colors active:scale-[0.98]">
               {/* Scan Icon */}
               <div className="text-white flex-shrink-0">
                 <ScanLine className="w-10 h-10" />
