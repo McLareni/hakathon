@@ -38,7 +38,10 @@ export async function GET(request: NextRequest) {
   }
 
   const conditions = await prisma.documentProcess.findMany({
-    where: { OR: [{ creatorId: userId }, { participantId: userId }] },
+    where: {
+      OR: [{ creatorId: userId }, { participantId: userId }],
+      status: { not: "CANCELLED" },
+    },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -181,12 +184,13 @@ export async function POST(request: NextRequest) {
         description: description?.trim() || null,
         type: type ?? DocumentProcessType.OTHER,
         status: "WAITING_PARTICIPANT",
-        participantId: participant.id,
+        participantId: null,
         sharedToken: makeToken(),
         expiresAt: new Date(Date.now() + validHours * 60 * 60 * 1000),
         metadata: {
           requestLanguage: safeLanguage,
           requestedFields: safeRequestedFields,
+          intendedParticipantId: participant.id,
           participantPhone: normalizedPhone,
           salePrice: typeof salePrice === "number" ? salePrice : null,
           mileage: typeof mileage === "number" ? mileage : null,
@@ -197,6 +201,19 @@ export async function POST(request: NextRequest) {
         sharedToken: true,
         status: true,
         expiresAt: true,
+      },
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: participant.id,
+        title: "Nowy wniosek o dane do umowy",
+        message: JSON.stringify({
+          type: "DATA_REQUEST",
+          text: "Sprzedający poprosił Cię o udostępnienie danych do umowy.",
+          token: process.sharedToken,
+          processId: process.id,
+        }),
       },
     });
 

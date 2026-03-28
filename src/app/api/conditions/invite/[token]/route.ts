@@ -14,6 +14,7 @@ type MetadataShape = {
   confirmedAt?: string;
   salePrice?: number | null;
   mileage?: number | null;
+  intendedParticipantId?: string;
 };
 
 function parseMetadata(value: Prisma.JsonValue | null): MetadataShape {
@@ -139,6 +140,18 @@ export async function POST(
       );
     }
 
+    const previousMeta = parseMetadata(process.metadata);
+
+    if (
+      previousMeta.intendedParticipantId &&
+      previousMeta.intendedParticipantId !== body.participantId
+    ) {
+      return NextResponse.json(
+        { error: "This request was sent to another participant" },
+        { status: 403 },
+      );
+    }
+
     if (process.participantId && process.participantId !== body.participantId) {
       return NextResponse.json(
         { error: "Another participant already confirmed this request" },
@@ -158,8 +171,6 @@ export async function POST(
       );
     }
 
-    const previousMeta = parseMetadata(process.metadata);
-
     const updated = await prisma.documentProcess.update({
       where: { id: process.id },
       data: {
@@ -178,10 +189,107 @@ export async function POST(
       },
     });
 
+    await prisma.notification.create({
+      data: {
+        userId: process.creatorId,
+        title: "Kupujący potwierdził dane",
+        message: JSON.stringify({
+          type: "DATA_CONFIRMED",
+          text: "Kupujący potwierdził dane. Możesz przejść do podpisania umowy.",
+          processId: process.id,
+        }),
+      },
+    });
+
     return NextResponse.json(updated);
   } catch {
     return NextResponse.json(
       { error: "Failed to confirm request" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ token: string }> },
+) {
+  try {
+    const { token } = await context.params;
+    const body = (await request.json()) as { participantId?: string };
+
+    if (!body.participantId) {
+      return NextResponse.json(
+        { error: "participantId is required" },
+        { status: 400 },
+      );
+    }
+
+    const process = await prisma.documentProcess.findUnique({
+      where: { sharedToken: token },
+      select: {
+        id: true,
+        creatorId: true,
+        participantId: true,
+        status: true,
+        expiresAt: true,
+        metadata: true,
+      },
+    });
+
+    if (!process) {
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
+    if (process.expiresAt && process.expiresAt < new Date()) {
+      return NextResponse.json({ error: "Request expired" }, { status: 410 });
+    }
+
+    if (process.status === "CANCELLED") {
+      return NextResponse.json(
+        { error: "Request already cancelled" },
+        { status: 409 },
+      );
+    }
+
+    const previousMeta = parseMetadata(process.metadata);
+
+    if (
+      previousMeta.intendedParticipantId &&
+      previousMeta.intendedParticipantId !== body.participantId
+    ) {
+      return NextResponse.json(
+        { error: "This request was sent to another participant" },
+        { status: 403 },
+      );
+    }
+
+    await prisma.documentProcess.update({
+      where: { id: process.id },
+      data: {
+        status: "CANCELLED",
+        metadata: {
+          ...previousMeta,
+          rejectedAt: new Date().toISOString(),
+        } as Prisma.InputJsonObject,
+      },
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: process.creatorId,
+        title: "Kupujący odrzucił prośbę o dane",
+        message: JSON.stringify({
+          type: "DATA_REJECTED",
+          text: "Kupujący odrzucił prośbę o udostępnienie danych. Dokument został anulowany.",
+        }),
+      },
+    });
+
+    return NextResponse.json({ ok: true, status: "CANCELLED" });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to reject request" },
       { status: 500 },
     );
   }

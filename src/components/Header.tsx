@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { BotMessageSquare, Bell } from "lucide-react";
 
 export const Header = () => {
@@ -16,7 +17,9 @@ export const Header = () => {
           </div>
           <div className="flex items-center gap-2">
             <BotMessageSquare className="w-8 h-8" />
-            <Bell className="w-8 h-8" />
+            <Link href="/powiadomienia" aria-label="Powiadomienia">
+              <Bell className="w-8 h-8" />
+            </Link>
           </div>
         </div>
       </div>

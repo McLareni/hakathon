@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const DASHBOARD_USER_ID = "b9427598-1055-4e6d-9315-4750df99452b";
+const DASHBOARD_USER_ID = "7a117f16-4b4b-44ae-99c0-2bd535cb9cb6";
 
 export async function GET(request: NextRequest) {
   try {
