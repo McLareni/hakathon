@@ -13,6 +13,8 @@ type CreateRequestPayload = {
   expiresInHours?: number;
   vehicleId?: string;
   type?: DocumentProcessType;
+  salePrice?: number;
+  mileage?: number;
 };
 
 function makeToken() {
@@ -70,6 +72,8 @@ export async function POST(request: NextRequest) {
       expiresInHours,
       vehicleId,
       type,
+      salePrice,
+      mileage,
     } = body;
 
     if (!creatorId || !title || !participantPhone) {
@@ -96,6 +100,7 @@ export async function POST(request: NextRequest) {
     }
 
     const normalizedPhone = normalizePhone(participantPhone);
+
     const participant = await prisma.user.findUnique({
       where: { phoneNumber: normalizedPhone },
       select: { id: true, phoneNumber: true },
@@ -122,7 +127,10 @@ export async function POST(request: NextRequest) {
       });
 
       if (!vehicle) {
-        return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Vehicle not found" },
+          { status: 404 },
+        );
       }
 
       if (vehicle.ownerId !== creatorId) {
@@ -159,6 +167,8 @@ export async function POST(request: NextRequest) {
           requestLanguage: safeLanguage,
           requestedFields: safeRequestedFields,
           participantPhone: normalizedPhone,
+          salePrice: typeof salePrice === "number" ? salePrice : null,
+          mileage: typeof mileage === "number" ? mileage : null,
         } as Prisma.InputJsonObject,
       },
       select: {
