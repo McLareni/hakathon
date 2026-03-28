@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const DASHBOARD_USER_ID = "dc88ba83-6324-468c-b182-52a04e1bd928";
+const DASHBOARD_USER_ID = "b9427598-1055-4e6d-9315-4750df99452b";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const userId = request.nextUrl.searchParams.get("userId") ?? DASHBOARD_USER_ID;
+
     const user = await prisma.user.findUnique({
-      where: { id: DASHBOARD_USER_ID },
+      where: { id: userId },
       include: {
         cars: {
           orderBy: { createdAt: "asc" },

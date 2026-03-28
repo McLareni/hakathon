@@ -26,17 +26,19 @@ function normalizePhone(phone: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const creatorId = request.nextUrl.searchParams.get("creatorId");
+  const userId =
+    request.nextUrl.searchParams.get("userId") ??
+    request.nextUrl.searchParams.get("creatorId");
 
-  if (!creatorId) {
+  if (!userId) {
     return NextResponse.json(
-      { error: "creatorId query parameter is required" },
+      { error: "userId query parameter is required" },
       { status: 400 },
     );
   }
 
   const conditions = await prisma.documentProcess.findMany({
-    where: { creatorId },
+    where: { OR: [{ creatorId: userId }, { participantId: userId }] },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -46,11 +48,30 @@ export async function GET(request: NextRequest) {
       createdAt: true,
       updatedAt: true,
       expiresAt: true,
+      metadata: true,
+      creatorId: true,
+      participantId: true,
+      creator: {
+        select: {
+          id: true,
+          imie: true,
+          nazwisko: true,
+        },
+      },
       participant: {
         select: {
           id: true,
           imie: true,
           nazwisko: true,
+        },
+      },
+      vehicle: {
+        select: {
+          brand: true,
+          model: true,
+          numerRejestracyjny: true,
+          numerVIN: true,
+          rok: true,
         },
       },
     },
@@ -183,7 +204,7 @@ export async function POST(request: NextRequest) {
       {
         processId: process.id,
         token: process.sharedToken,
-        inviteUrl: `${request.nextUrl.origin}/join/${process.sharedToken}`,
+        inviteUrl: `${request.nextUrl.origin}/invite/${process.sharedToken}`,
         resultUrl: `${request.nextUrl.origin}/api/conditions/${process.id}/result?creatorId=${creatorId}`,
         status: process.status,
         expiresAt: process.expiresAt,

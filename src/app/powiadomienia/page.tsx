@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Bell, Info, FileText, CheckCircle2 } from "lucide-react";
-import { BottomNav } from "@/components/BottomNav";
+import { ChevronLeft } from "lucide-react";
 
 export default function PowiadomieniaPage() {
   const router = useRouter();
@@ -10,13 +9,13 @@ export default function PowiadomieniaPage() {
   return (
     <div className="min-h-screen bg-[#606164] flex justify-center items-start  font-sans text-[#1b1b1f]">
       
-      <main className="relative w-full max-w-[414px] bg-[#F8F9FA] min-h-screen sm:min-h-[896px] shadow-2xl overflow-hidden flex flex-col">
+      <main className="relative w-full bg-[#f5f5f5] min-h-screen sm:min-h-[896px] overflow-hidden flex flex-col">
         
         {/* Контентна область */}
         <div className="flex-1 overflow-y-auto hide-scrollbar flex flex-col pb-10">
           
           {/* Header Section */}
-          <div className="px-5 pt-14 mb-6">
+          <div className="px-5 mb-6">
             {/* Кнопка тепер веде строго на головну / */}
             <button 
               onClick={() => router.push('/')} 
@@ -48,8 +47,6 @@ export default function PowiadomieniaPage() {
           </div>
 
          </div>
-
-        <BottomNav />
       </main>
     </div>
   );

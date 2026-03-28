@@ -1,17 +1,25 @@
 import { IdCard } from 'lucide-react';
 
-export const QuickActions = () => {
+type QuickActionTab = "Dokumenty" | "Umowy";
+
+export const QuickActions = ({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: QuickActionTab;
+  onTabChange: (tab: QuickActionTab) => void;
+}) => {
   const actions = [
     {
       label: "Dokumenty",
-      active: true,
+      active: activeTab === "Dokumenty",
       icon: (
         <IdCard className="h-10 w-10" strokeWidth={1.7} />
       ),
     },
     {
       label: "Umowy",
-      active: false,
+      active: activeTab === "Umowy",
       icon: (
         <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
           <path d="M8 3.5h8a2 2 0 012 2V20a.5.5 0 01-.8.4L14 18H8a2 2 0 01-2-2V5.5a2 2 0 012-2z" />
@@ -29,6 +37,7 @@ export const QuickActions = () => {
           <button
             key={action.label}
             type="button"
+            onClick={() => onTabChange(action.label as QuickActionTab)}
             className={`flex flex-1 flex-col items-center justify-center gap-2.5 rounded-[20px] py-6 text-center ${
               action.active
                 ? "bg-[#e31d3b] border border-[#DC143C] text-white shadow-redSoft"

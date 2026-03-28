@@ -87,6 +87,8 @@ export default function InviteConfirmPage() {
         const { error: msg } = await res.json() as { error: string };
         throw new Error(msg ?? "Błąd potwierdzenia");
       }
+
+      router.push(`/umowa?processId=${process.id}&userId=${user.id}`);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Błąd potwierdzenia");
     } finally {

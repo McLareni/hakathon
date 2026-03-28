@@ -82,13 +82,17 @@ export default function SprzedazPojazduPage() {
         }),
       });
 
-      const result = (await response.json()) as { error?: string; token?: string };
+      const result = (await response.json()) as {
+        error?: string;
+        token?: string;
+        processId?: string;
+      };
 
-      if (!response.ok || !result.token) {
+      if (!response.ok || !result.token || !result.processId) {
         throw new Error(result.error ?? "Nie udało się utworzyć zaproszenia.");
       }
 
-      router.push("/umowa");
+      router.push(`/umowa?processId=${result.processId}&userId=${data.user.id}`);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Nie udało się wysłać zapytania.");
     } finally {

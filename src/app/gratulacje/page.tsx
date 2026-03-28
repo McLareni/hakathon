@@ -18,10 +18,10 @@ export default function GratulacjePage() {
     <div className="min-h-screen bg-[#606164] flex justify-center items-start  font-sans text-[#1b1b1f]">
       
       {/* Головний контейнер (Екран телефону) */}
-      <main className="relative w-full max-w-[414px] bg-[#F8F9FA] min-h-screen sm:min-h-[896px] shadow-2xl  overflow-hidden flex flex-col">
+      <main className="relative w-full bg-[#f5f5f5] min-h-screen sm:min-h-[896px] overflow-hidden flex flex-col">
         
         {/* Блок контенту, що скролиться */}
-        <div className="flex-1 overflow-y-auto hide-scrollbar flex flex-col p-6 pt-12 pb-10">
+        <div className="flex-1 overflow-y-auto hide-scrollbar flex flex-col p-6 pt-0 pb-10">
           
           {/* Кнопка закриття (X) */}
           <div className="flex justify-end mb-2">
