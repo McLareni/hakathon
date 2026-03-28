@@ -163,7 +163,7 @@ export default function InviteConfirmPage() {
           </div>
         )}
 
-        <div className="flex-1 px-4 flex flex-col gap-4 pb-36">
+        <div className="flex-1 px-4 flex flex-col gap-4 pb-4">
 
           {/* ── SELLER CARD ── */}
           <div className="rounded-[18px] bg-white px-5 py-5 shadow-sm">
@@ -273,7 +273,7 @@ export default function InviteConfirmPage() {
         </div>
 
         {/* ── BOTTOM BUTTONS ── */}
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-107.5 bg-white px-4 pt-3 pb-8 border-t border-[#f0f1f3] flex gap-3 sm:border-x sm:border-gray-200 z-50">
+        <div className="w-full max-w-107.5 bg-[#f5f5f5] px-4 pt-3 pb-8 border-t border-[#f0f1f3] flex gap-3 sm:border-x sm:border-gray-200 z-50">
           <button
             onClick={handleReject}
             className="flex-1 rounded-[14px] border border-[#d1d5db] bg-white py-4 text-[15px] font-bold text-[#1a1f2e] active:bg-[#f5f5f5] disabled:opacity-50"

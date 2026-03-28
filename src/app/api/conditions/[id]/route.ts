@@ -227,6 +227,20 @@ export async function POST(
       },
     });
 
+    if (bothSigned && process.participantId) {
+      await prisma.notification.create({
+        data: {
+          userId: process.participantId,
+          title: "Umowa została podpisana",
+          message: JSON.stringify({
+            type: "CONTRACT_SIGNED",
+            text: "Umowa została podpisana przez obie strony. Możesz przejść do podsumowania zakupu.",
+            processId: process.id,
+          }),
+        },
+      });
+    }
+
     return NextResponse.json({
       ...updated,
       signatures: nextSignatures,

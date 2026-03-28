@@ -46,11 +46,13 @@ export async function GET(request: NextRequest) {
     const payload = parsePayload(item.message);
     const actionUrl = payload.type === "DATA_REJECTED"
       ? null
-      : payload.token
-        ? `/invite/${payload.token}`
-        : payload.processId
-          ? `/umowa?processId=${payload.processId}&userId=${userId}`
-          : null;
+      : payload.type === "CONTRACT_SIGNED"
+        ? `/gratulacje?processId=${payload.processId ?? ""}`
+        : payload.token
+          ? `/invite/${payload.token}`
+          : payload.processId
+            ? `/umowa?processId=${payload.processId}&userId=${userId}`
+            : null;
 
     return {
       id: item.id,
