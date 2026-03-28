@@ -41,6 +41,11 @@ export async function GET(request: Request) {
         rok: vehicleData.rok,
         stanLicznika: vehicleData.stanLicznika,
         numerVIN: vehicleData.numerVIN,
+        formaWlasnosci: vehicleData.formaWlasnosci,
+        ubezpieczenie: vehicleData.ubezpieczenie?.toISOString() ?? null,
+        badanieTechniczne: vehicleData.badanieTechniczne?.toISOString() ?? null,
+        pierwszaRejestracja: vehicleData.pierwszaRejestracja?.toISOString() ?? null,
+        dataNabyciaPraw: vehicleData.dataNabyciaPraw?.toISOString() ?? null,
       },
       user: {
         id: vehicleData.owner.id,
