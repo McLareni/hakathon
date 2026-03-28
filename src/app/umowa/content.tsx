@@ -2,8 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Hourglass, FilePenLine, ChevronLeft, AlertCircle } from "lucide-react";
-import { BottomNav } from "@/components/BottomNav";
+import { Hourglass, FilePenLine, ChevronLeft, AlertCircle, Printer } from "lucide-react";
 
 type DashboardUser = {
   id: string;
@@ -197,6 +196,10 @@ export function UmowaContent() {
 
   const creatorSigned = Boolean(condition.signatures?.creatorSignedAt);
   const participantSigned = Boolean(condition.signatures?.participantSignedAt);
+  const isVehicleDocument =
+    condition.type === "SALE_PURCHASE" || condition.type === "CAR_SALE";
+  const firstPartyLabel = isVehicleDocument ? "Sprzedający" : "Strona 1";
+  const secondPartyLabel = isVehicleDocument ? "Kupujący" : "Strona 2";
   const isCreator = condition.creator.id === currentUser?.id;
   const isParticipant = condition.participant?.id === currentUser?.id;
   const currentUserSigned =
@@ -211,17 +214,29 @@ export function UmowaContent() {
 
   const statusMessage = (() => {
     if (condition.status === "WAITING_PARTICIPANT") {
-      return "Oczekiwanie na potwierdzenie danych przez kupującego";
+      return isVehicleDocument
+        ? "Oczekiwanie na potwierdzenie danych przez kupującego"
+        : "Oczekiwanie na potwierdzenie danych przez drugą stronę";
     }
     if (condition.status === "COMPLETED") {
-      return "Umowa podpisana przez obie strony";
+      return "Dokument podpisany przez obie strony";
     }
     if (condition.status === "IN_REVIEW" || condition.status === "PARTICIPANT_JOINED") {
-      if (creatorSigned && !participantSigned) return "Sprzedający podpisał. Oczekiwanie na podpis kupującego";
-      if (!creatorSigned && participantSigned) return "Kupujący podpisał. Oczekiwanie na podpis sprzedającego";
-      return "Dane potwierdzone. Umowa czeka na podpisy obu stron";
+      if (creatorSigned && !participantSigned) {
+        return isVehicleDocument
+          ? "Sprzedający podpisał. Oczekiwanie na podpis kupującego"
+          : "Strona 1 podpisała. Oczekiwanie na podpis strony 2";
+      }
+      if (!creatorSigned && participantSigned) {
+        return isVehicleDocument
+          ? "Kupujący podpisał. Oczekiwanie na podpis sprzedającego"
+          : "Strona 2 podpisała. Oczekiwanie na podpis strony 1";
+      }
+      return isVehicleDocument
+        ? "Dane potwierdzone. Umowa czeka na podpisy obu stron"
+        : "Dane potwierdzone. Dokument czeka na podpisy obu stron";
     }
-    return "Status umowy";
+    return isVehicleDocument ? "Status umowy" : "Status dokumentu";
   })();
 
   return (
@@ -253,17 +268,17 @@ export function UmowaContent() {
           {/* Contract Card */}
           <div className="mx-6 bg-white rounded-3xl shadow-[0_4px_30px_rgba(0,0,0,0.04)] border border-gray-100 p-8 flex flex-col">
             <h2 className="text-[17px] font-black text-[#1a1e27] text-center mb-8 uppercase tracking-wider leading-relaxed">
-              {condition.type === "SALE_PURCHASE" ? "Umowa kupna-sprzedaży\npojazdu" : condition.title}
+              {isVehicleDocument ? "Umowa kupna-sprzedaży\npojazdu" : condition.title}
             </h2>
 
             {/* Parties Section */}
             <div className="space-y-6 mb-8">
               <div>
-                <p className="text-[15px] font-black text-[#1a1e27] mb-1">Sprzedający:</p>
+                <p className="text-[15px] font-black text-[#1a1e27] mb-1">{firstPartyLabel}:</p>
                 <p className="text-[15px] text-[#4b5563]">{condition.creator.imie} {condition.creator.nazwisko}</p>
               </div>
               <div>
-                <p className="text-[15px] font-black text-[#1a1e27] mb-1">Kupujący:</p>
+                <p className="text-[15px] font-black text-[#1a1e27] mb-1">{secondPartyLabel}:</p>
                 <p className={`text-[15px] ${condition.participant ? 'text-[#4b5563]' : 'text-[#9ca3af]'} italic`}>
                   {condition.participant
                     ? `${condition.participant.imie} ${condition.participant.nazwisko}`
@@ -293,16 +308,18 @@ export function UmowaContent() {
             {/* Price Section */}
             {condition.salePrice && (
               <div className="mb-8">
-                <p className="text-[15px] font-black text-[#1a1e27] mb-2">Cena sprzedaży:</p>
+                <p className="text-[15px] font-black text-[#1a1e27] mb-2">
+                  {isVehicleDocument ? "Cena sprzedaży:" : "Kwota:"}
+                </p>
                 <p className="text-[26px] font-black text-[#e32129]">{formatPrice(condition.salePrice)}</p>
               </div>
             )}
 
             {/* Legal Text */}
             <p className="text-[11px] text-[#9ca3af] leading-relaxed mb-10">
-              Strony oświadczają, że zawarły niniejszą umowę po zapoznaniu się z jej treścią, 
-              dobrowolnie i bez przymusu. Sprzedający oświadcza, że pojazd jest wolny od 
-              wad prawnych i nie jest obciążony prawami osób trzecich.
+              {isVehicleDocument
+                ? "Strony oświadczają, że zawarły niniejszą umowę po zapoznaniu się z jej treścią, dobrowolnie i bez przymusu. Sprzedający oświadcza, że pojazd jest wolny od wad prawnych i nie jest obciążony prawami osób trzecich."
+                : "Strony oświadczają, że zawarły niniejszy dokument po zapoznaniu się z jego treścią, dobrowolnie i bez przymusu."}
             </p>
 
             {/* Agreement Date */}
@@ -319,7 +336,7 @@ export function UmowaContent() {
           </div>
 
           {/* Signature Button */}
-          <div className="px-6 mt-8 mb-24">
+          <div className="px-6 mt-8 mb-24 flex flex-col gap-3">
             <button 
               onClick={handleSign}
               disabled={!canSign}
@@ -335,14 +352,26 @@ export function UmowaContent() {
                     : "Podpisz umowę"}
             </button>
             {(creatorSigned || participantSigned) && (
-              <p className="mt-3 text-center text-[12px] text-[#6b7280]">
-                Sprzedający: {creatorSigned ? "podpisano" : "brak podpisu"} | Kupujący: {participantSigned ? "podpisano" : "brak podpisu"}
+              <p className="mt-1 text-center text-[12px] text-[#6b7280]">
+                {firstPartyLabel}: {creatorSigned ? "podpisano" : "brak podpisu"} | {secondPartyLabel}: {participantSigned ? "podpisano" : "brak podpisu"}
               </p>
             )}
+            {creatorSigned && participantSigned ? (
+              <button
+                onClick={() =>
+                  window.open(
+                    `/api/conditions/${condition.id}/pdf?userId=${currentUser?.id ?? ""}`,
+                    "_blank",
+                  )
+                }
+                className="w-full bg-white border border-gray-200 text-[#1a1e27] font-bold text-[16px] rounded-[18px] py-4 flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(0,0,0,0.06)] active:scale-95 transition-all"
+              >
+                <Printer size={20} />
+                Drukuj / Pobierz PDF
+              </button>
+            ) : null}
           </div>
         </div>
-
-        <BottomNav />
       </main>
     </div>
   );

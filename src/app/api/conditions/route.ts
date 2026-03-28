@@ -8,6 +8,8 @@ type CreateRequestPayload = {
   participantPhone?: string;
   title?: string;
   description?: string;
+  templateId?: string;
+  filledValues?: Record<string, string>;
   language?: "pl";
   requestedFields?: string[];
   expiresInHours?: number;
@@ -91,6 +93,8 @@ export async function POST(request: NextRequest) {
       participantPhone,
       title,
       description,
+      templateId,
+      filledValues,
       language,
       requestedFields,
       expiresInHours,
@@ -190,6 +194,9 @@ export async function POST(request: NextRequest) {
         metadata: {
           requestLanguage: safeLanguage,
           requestedFields: safeRequestedFields,
+          templateId: templateId ?? null,
+          filledValues:
+            filledValues && typeof filledValues === "object" ? filledValues : {},
           intendedParticipantId: participant.id,
           participantPhone: normalizedPhone,
           salePrice: typeof salePrice === "number" ? salePrice : null,

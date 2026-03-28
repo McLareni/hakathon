@@ -53,7 +53,17 @@ export async function POST(request: NextRequest) {
 
     const ocrResult = await extractTextFromScan(file);
     const analysis = analyzeScanText(ocrResult.text);
-    const templateContent = ocrResult.styledHtml || analysis.generatedContent;
+
+    // If OCR extracted no text (scanned image PDF) and type is CAR_SALE,
+    // fall back to the system template content stored in DB.
+    let templateContent = ocrResult.styledHtml || analysis.generatedContent;
+    if (!ocrResult.text && type === DocumentProcessType.CAR_SALE) {
+      const systemTemplate = await prisma.documentTemplate.findFirst({
+        where: { source: DocumentTemplateSource.SYSTEM, type: DocumentProcessType.CAR_SALE },
+        select: { content: true },
+      });
+      if (systemTemplate) templateContent = systemTemplate.content;
+    }
 
     const template = await prisma.documentTemplate.create({
       data: {
@@ -94,9 +104,11 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 },
     );
-  } catch {
+  } catch (err) {
+    console.error("[upload-scan] error:", err);
+    const message = err instanceof Error ? err.message : "Failed to analyze uploaded scan";
     return NextResponse.json(
-      { error: "Failed to analyze uploaded scan" },
+      { error: message },
       { status: 500 },
     );
   }

@@ -1,5 +1,21 @@
 import pdfParse from "pdf-parse/lib/pdf-parse.js";
-import { createWorker } from "tesseract.js";
+import path from "node:path";
+
+const TESSERACT_WORKER_PATH = path.resolve(
+  process.cwd(),
+  "node_modules",
+  "tesseract.js",
+  "src",
+  "worker-script",
+  "node",
+  "index.js",
+);
+const TESSERACT_CORE_PATH = path.resolve(
+  process.cwd(),
+  "node_modules",
+  "tesseract.js-core",
+  "tesseract-core.wasm.js",
+);
 
 type OcrResult = {
   text: string;
@@ -22,7 +38,12 @@ type OcrWord = {
 };
 
 function normalizeText(text: string) {
-  return text.replace(/\s+/g, " ").trim();
+  return text
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n");
 }
 
 function escapeHtml(value: string) {
@@ -65,7 +86,11 @@ function buildStyledHtml(words: OcrWord[]) {
 }
 
 async function extractWithTesseract(buffer: Buffer) {
-  const worker = await createWorker("pol+eng");
+  const { createWorker } = await import("tesseract.js");
+  const worker = await createWorker("pol+eng", 1, {
+    workerPath: TESSERACT_WORKER_PATH,
+    corePath: TESSERACT_CORE_PATH,
+  });
 
   try {
     const result = await worker.recognize(buffer);
@@ -132,22 +157,25 @@ export async function extractTextFromScan(file: File): Promise<OcrResult> {
   }
 
   if (mime === "application/pdf" || fileName.endsWith(".pdf")) {
-    const parsed = await pdfParse(fileBuffer);
-    const parsedText = normalizeText(parsed.text || "");
+    try {
+      const parsed = await pdfParse(fileBuffer);
+      const parsedText = normalizeText(parsed.text || "");
 
-    if (parsedText.length > 20) {
-      return {
-        text: parsedText,
-        engine: "pdf-parse",
-      };
+      if (parsedText.length > 20) {
+        return {
+          text: parsedText,
+          engine: "pdf-parse",
+        };
+      }
+    } catch {
+      // pdfParse failed (encrypted / unsupported PDF) — fall through to plain fallback
     }
 
-    const ocrResult = await extractWithTesseract(fileBuffer);
+    // PDF has no extractable text (scanned image PDF) and Tesseract cannot read
+    // raw PDF bytes — return empty text so analyzeScanText uses its defaults.
     return {
-      text: ocrResult.text,
-      engine: "tesseract",
-      styledHtml: ocrResult.styledHtml,
-      layout: ocrResult.layout,
+      text: "",
+      engine: "pdf-parse",
     };
   }
 
